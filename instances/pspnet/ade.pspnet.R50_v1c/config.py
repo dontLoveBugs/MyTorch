@@ -104,13 +104,17 @@ def open_tensorboard():
 if __name__ == '__main__':
     # print(config.epoch_num)
 
-    from modules.utils.config import save_config
-    save_config('./config.json', config)
+    # from modules.utils.config import save_config
+    # save_config('./config.json', config)
+    #
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument(
+    #     '-tb', '--tensorboard', default=False, action='store_true')
+    # args = parser.parse_args()
+    #
+    # if args.tensorboard:
+    #     open_tensorboard()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-tb', '--tensorboard', default=False, action='store_true')
-    args = parser.parse_args()
-
-    if args.tensorboard:
-        open_tensorboard()
+    from modules.utils.config import Config
+    config = Config(config_file='./config.json').get_config()
+    print(config)

@@ -9,13 +9,15 @@ import torch
 import torch.multiprocessing as mp
 
 from config import config
-from utils.pyt_utils import ensure_dir, link_file, load_model, parse_devices
-from utils.visualize import print_iou, show_img
-from engine.evaluator import Evaluator
-from engine.logger import get_logger
-from seg_opr.metric import hist_info, compute_score
-from datasets.ade import ADE
 from network import PSPNet
+
+from modules.utils.pyt_utils import ensure_dir, link_file, load_model, parse_devices
+from modules.utils.visualize import print_iou, show_img
+from modules.engine.evaluator import Evaluator
+from modules.engine.logger import get_logger
+from modules.seg_opr.metric import hist_info, compute_score
+from modules.datasets.ade import ADE
+
 
 logger = get_logger()
 

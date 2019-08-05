@@ -7,11 +7,12 @@ import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 
-from config import config
-from dataloader import get_train_loader
-from network import PSPNet
-from datasets import ADE
+from modules.utils.config import Config
 
+from .dataloader import get_train_loader
+from .network import PSPNet
+
+from modules.datasets import ADE
 from modules.utils.init_func import init_weight, group_weight
 from modules.utils.pyt_utils import all_reduce_tensor
 from modules.engine.lr_policy import PolyLR
@@ -26,14 +27,17 @@ except ImportError:
 
 logger = get_logger()
 
+# 读取配置文件
+config = Config(config_file='./config.json').get_config()
+
 torch.manual_seed(config.seed)
 if torch.cuda.is_available():
     torch.cuda.manual_seed(config.seed)
 
 parser = argparse.ArgumentParser()
 
-with Engine(custom_parser=parser) as engine:
-    args = parser.parse_args()
+with Engine(config=config) as engine:
+    # args = parser.parse_args()
 
     cudnn.benchmark = True
     if engine.distributed:
@@ -50,7 +54,7 @@ with Engine(custom_parser=parser) as engine:
         logger.info('Use the Multi-Process-SyncBatchNorm')
         BatchNorm2d = SyncBatchNorm
 
-    model = PSPNet(config.num_classes, criterion=criterion,
+    model = PSPNet(config, criterion=criterion,
                    pretrained_model=config.pretrained_model,
                    norm_layer=BatchNorm2d)
     init_weight(model.business_layer, nn.init.kaiming_normal_,
@@ -68,12 +72,12 @@ with Engine(custom_parser=parser) as engine:
                                    base_lr * 10)
 
     # config lr policy
-    total_iteration = config.nepochs * config.niters_per_epoch
-    lr_policy = PolyLR(base_lr, config.lr_power, total_iteration)
+    total_iteration = config.train.nepochs * config.train.niters_per_epoch
+    lr_policy = PolyLR(base_lr, config.train.lr_power, total_iteration)
     optimizer = torch.optim.SGD(params_list,
                                 lr=base_lr,
-                                momentum=config.momentum,
-                                weight_decay=config.weight_decay)
+                                momentum=config.train.momentum,
+                                weight_decay=config.train.weight_decay)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)

@@ -36,7 +36,10 @@ class State(object):
 
 
 class Engine(object):
-    def __init__(self, custom_parser=None):
+    def __init__(self, config=None):
+        """
+        :param config: easydict
+        """
         self.version = __version__
         logger.info(
             "PyTorch Version {}, Furnace Version {}".format(torch.__version__,
@@ -45,39 +48,41 @@ class Engine(object):
         self.devices = None
         self.distributed = False
 
-        if custom_parser is None:
-            self.parser = argparse.ArgumentParser()
-        else:
-            assert isinstance(custom_parser, argparse.ArgumentParser)
-            self.parser = custom_parser
+        # if custom_parser is None:
+        #     self.parser = argparse.ArgumentParser()
+        # else:
+        #     assert isinstance(custom_parser, argparse.ArgumentParser)
+        #     self.parser = custom_parser
+        self.config = config
 
-        self.inject_default_parser()
-        self.args = self.parser.parse_args()
+        # self.inject_default_parser()
+        # self.args = config
 
-        self.continue_state_object = self.args.continue_fpath
+        self.continue_state_object = self.config.model.continue_path
 
         if 'WORLD_SIZE' in os.environ:
             self.distributed = int(os.environ['WORLD_SIZE']) > 1
 
         if self.distributed:
-            self.local_rank = self.args.local_rank
+            self.local_rank = self.config.environ.local_rank
             self.world_size = int(os.environ['WORLD_SIZE'])
             torch.cuda.set_device(self.local_rank)
             dist.init_process_group(backend="nccl", init_method='env://')
-            self.devices = [i for i in range(self.world_size)]
+            # self.devices = [i for i in range(self.world_size)]
         else:
-            self.devices = parse_devices(self.args.devices)
+            # self.devices = parse_devices(self.config.devices)
+            pass
 
-    def inject_default_parser(self):
-        p = self.parser
-        p.add_argument('-d', '--devices', default='',
-                       help='set data parallel training')
-        p.add_argument('-c', '--continue', type=extant_file,
-                       metavar="FILE",
-                       dest="continue_fpath",
-                       help='continue from one certain checkpoint')
-        p.add_argument('--local_rank', default=0, type=int,
-                       help='process rank on node')
+    # def inject_default_parser(self):
+    #     p = self.parser
+    #     p.add_argument('-d', '--devices', default='',
+    #                    help='set data parallel training')
+    #     p.add_argument('-c', '--continue', type=extant_file,
+    #                    metavar="FILE",
+    #                    dest="continue_fpath",
+    #                    help='continue from one certain checkpoint')
+    #     p.add_argument('--local_rank', default=0, type=int,
+    #                    help='process rank on node')
 
     def register_state(self, **kwargs):
         self.state.register(**kwargs)
@@ -99,6 +104,7 @@ class Engine(object):
             if k.split('.')[0] == 'module':
                 key = k[7:]
             new_state_dict[key] = v
+
         state_dict['model'] = new_state_dict
         state_dict['optimizer'] = self.state.optimizer.state_dict()
         state_dict['epoch'] = self.state.epoch

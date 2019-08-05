@@ -6,9 +6,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from config import config
-from base_model import resnet50
-from seg_opr.seg_oprs import ConvBnRelu
+from modules.base_model import resnet50
+from modules.seg_opr.seg_oprs import ConvBnRelu
+
+# 读取配置文件
+from modules.utils.config import Config
+
+config = Config(config_file='./config.json').get_config()
 
 
 class PSPNet(nn.Module):
@@ -16,8 +20,8 @@ class PSPNet(nn.Module):
                  norm_layer=nn.BatchNorm2d):
         super(PSPNet, self).__init__()
         self.backbone = resnet50(pretrained_model, norm_layer=norm_layer,
-                                 bn_eps=config.bn_eps,
-                                 bn_momentum=config.bn_momentum,
+                                 bn_eps=config.model.bn_eps,
+                                 bn_momentum=config.model.bn_momentum,
                                  deep_stem=True, stem_width=64)
         self.backbone.layer3.apply(partial(self._nostride_dilate, dilate=2))
         self.backbone.layer4.apply(partial(self._nostride_dilate, dilate=4))

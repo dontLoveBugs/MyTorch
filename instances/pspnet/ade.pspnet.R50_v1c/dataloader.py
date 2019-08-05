@@ -3,10 +3,14 @@ import torch
 import numpy as np
 from torch.utils import data
 
-from config import config
-from utils.img_utils import random_scale, random_mirror, normalize, \
+
+from modules.utils.img_utils import random_scale, random_mirror, normalize, \
     generate_random_crop_pos, random_crop_pad_to_shape
 
+
+"""
+    重新实现数据读取
+"""
 
 class TrainPre(object):
     def __init__(self, img_mean, img_std, target_size):

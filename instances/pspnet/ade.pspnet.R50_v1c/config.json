@@ -1,70 +1,62 @@
 {
-    "log_dir_link": "/data/wangxin/Project/MyTorch/instances/pspnet/ade.pspnet.R50_v1c/log",
-    "weight_decay": 0.0001,
-    "link_log_file": "/data/wangxin/Project/MyTorch/log/ade.pspnet.R50_v1c/log_2019_08_04_08_26_58.log/log_last.log",
-    "lr_power": 0.9,
-    "val_log_file": "/data/wangxin/Project/MyTorch/log/ade.pspnet.R50_v1c/val_2019_08_04_08_26_58.log",
-    "eval_scale_array": [
-        1
-    ],
-    "image_std": [
-        0.229,
-        0.224,
-        0.225
-    ],
-    "snapshot_iter": 10,
-    "bn_eps": 1e-05,
-    "is_test": false,
-    "num_train_imgs": 20210,
-    "nepochs": 120,
-    "record_info_iter": 20,
-    "num_classes": 150,
-    "momentum": 0.9,
-    "eval_crop_size": 480,
-    "this_dir": "ade.pspnet.R50_v1c",
-    "seed": 304,
-    "num_workers": 24,
-    "root_dir": "/data/wangxin/Project/MyTorch",
-    "train_scale_array": [
-        0.5,
-        0.75,
-        1,
-        1.5,
-        1.75,
-        2
-    ],
-    "link_val_log_file": "/data/wangxin/Project/MyTorch/log/ade.pspnet.R50_v1c/val_last.log",
-    "num_eval_imgs": 1449,
-    "target_size": 480,
-    "lr": 0.01,
-    "display_iter": 50,
-    "gt_root_folder": "/root/Source/Datasets/Segmentation/ADE20K/ADE2017/annotations_sceneparsing/",
-    "sync_bn": true,
-    "abs_dir": "/data/wangxin/Project/MyTorch/instances/pspnet/ade.pspnet.R50_v1c",
-    "niters_per_epoch": 1263,
-    "background": -1,
-    "train_source": "/root/Source/Datasets/Segmentation/ADE20K/ADE2017/images/training.txt",
-    "image_height": 480,
-    "bn_momentum": 0.1,
-    "eval_source": "/root/Source/Datasets/Segmentation/ADE20K/ADE2017/images/validation.txt",
-    "repo_name": "MyTorch",
-    "fix_bn": false,
-    "image_mean": [
-        0.485,
-        0.456,
-        0.406
-    ],
-    "log_dir": "/data/wangxin/Project/MyTorch/log/ade.pspnet.R50_v1c",
-    "pretrained_model": "/root/Source/model_zoo/pytorch_model/resnet50_v1c.pth",
-    "snapshot_dir": "/data/wangxin/Project/MyTorch/log/ade.pspnet.R50_v1c/snapshot",
-    "image_width": 480,
-    "eval_stride_rate": 0.6666666666666666,
-    "batch_size": 16,
-    "dataset_path": "/root/Source/Datasets/Segmentation/ADE20K/ADE2017/",
-    "eval_base_size": 480,
-    "log_file": "/data/wangxin/Project/MyTorch/log/ade.pspnet.R50_v1c/log_2019_08_04_08_26_58.log",
-    "img_root_folder": "/root/Source/Datasets/Segmentation/ADE20K/ADE2017/images/",
-    "eval_iter": 30,
-    "eval_flip": false,
-    "fix_bias": true
+    "environ" :
+    {
+        "devide": "",
+        "local_rank": 0,
+        "seed": 304,
+        "repo_name": "MyTorch"
+    },
+
+    "model" :
+    {
+        "pretrained_model": "/root/Source/model_zoo/pytorch_model/resnet50_v1c.pth",
+        "continue_path": "",
+        "bn_momentum": 0.1,
+        "bn_eps": 1e-05,
+        "sync_bn": true,
+        "fix_bias": true,
+        "fix_bn": false
+    },
+
+    "train" :
+    {
+        "batch_size": 16,
+        "lr": 0.01,
+        "lr_power": 0.9,
+        "momentum": 0.9,
+        "weight_decay": 0.0001,
+        "nepochs": 120,
+        "num_workers": 24,
+        "train_scale_array": [0.5, 0.75, 1, 1.5, 1.75, 2]
+    },
+
+    "eval": {
+        "eval_iter": 30,
+        "eval_base_size": 480,
+        "eval_crop_size": 480,
+        "eval_stride_rate": 0.6666666666666666,
+        "eval_flip": false,
+        "eval_scale_array": [1]
+    },
+
+    "data": {
+        "dataset_path": "/root/Source/Datasets/Segmentation/ADE20K/ADE2017/",
+        "image_height": 480,
+        "image_width": 480,
+        "target_size": 480,
+        "num_train_imgs": 20210,
+        "num_eval_imgs": 1449,
+        "num_classes": 150,
+        "background": -1,
+        "image_mean": [0.485, 0.456, 0.406],
+        "image_std": [0.229, 0.224, 0.225],
+        "is_test": false
+    },
+
+    "display":
+    {
+        "snapshot_iter": 10,
+        "record_info_iter": 20,
+        "display_iter": 50
+    }
 }
