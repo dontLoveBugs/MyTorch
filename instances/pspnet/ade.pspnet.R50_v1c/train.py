@@ -12,7 +12,7 @@ from modules.utils.config import Config
 from .dataloader import get_train_loader
 from .network import PSPNet
 
-from modules.datasets import ADE
+from modules.datasets.seg.ade import ADE
 from modules.utils.init_func import init_weight, group_weight
 from modules.utils.pyt_utils import all_reduce_tensor
 from modules.engine.lr_policy import PolyLR
@@ -20,7 +20,7 @@ from modules.engine.logger import get_logger
 from modules.engine.engine import Engine
 
 try:
-    from apex.parallel import SyncBatchNorm, DistributedDataParallel
+    from third_libs.parallel import SyncBatchNorm, DistributedDataParallel
 except ImportError:
     raise ImportError(
         "Please install apex from https://www.github.com/nvidia/apex .")
@@ -44,7 +44,7 @@ with Engine(config=config) as engine:
         torch.cuda.set_device(engine.local_rank)
 
     # data loader
-    train_loader, train_sampler = get_train_loader(engine, ADE)
+    train_loader, train_sampler, niters_per_epoch = get_train_loader(engine, ADE)
 
     # config network and criterion
     criterion = nn.CrossEntropyLoss(reduction='mean',
@@ -62,7 +62,7 @@ with Engine(config=config) as engine:
                 mode='fan_in', nonlinearity='relu')
 
     # group weight and config optimizer
-    base_lr = config.lr
+    base_lr = config.train.lr
 
     params_list = []
     params_list = group_weight(params_list, model.backbone,
@@ -72,7 +72,7 @@ with Engine(config=config) as engine:
                                    base_lr * 10)
 
     # config lr policy
-    total_iteration = config.train.nepochs * config.train.niters_per_epoch
+    total_iteration = config.train.nepochs * niters_per_epoch
     lr_policy = PolyLR(base_lr, config.train.lr_power, total_iteration)
     optimizer = torch.optim.SGD(params_list,
                                 lr=base_lr,
@@ -97,7 +97,7 @@ with Engine(config=config) as engine:
         if engine.distributed:
             train_sampler.set_epoch(epoch)
         bar_format = '{desc}[{elapsed}<{remaining},{rate_fmt}]'
-        pbar = tqdm(range(config.niters_per_epoch), file=sys.stdout,
+        pbar = tqdm(range(engine.niters_per_epoch), file=sys.stdout,
                     bar_format=bar_format)
         dataloader = iter(train_loader)
         for idx in pbar:
@@ -121,7 +121,7 @@ with Engine(config=config) as engine:
             loss.backward()
             optimizer.step()
 
-            current_idx = epoch * config.niters_per_epoch + idx
+            current_idx = epoch * engine.niters_per_epoch + idx
             lr = lr_policy.get_lr(current_idx)
 
             optimizer.param_groups[0]['lr'] = lr

@@ -7,10 +7,13 @@
 import os
 import os.path as osp
 import time
-import argparse
+
+import numpy as np
+import random
 
 import torch
 import torch.distributed as dist
+from torch.backends import cudnn
 
 from .logger import get_logger
 from .version import __version__
@@ -54,35 +57,39 @@ class Engine(object):
         #     assert isinstance(custom_parser, argparse.ArgumentParser)
         #     self.parser = custom_parser
         self.config = config
+        self.continue_state_object = self.config.model.continue_path
 
         # self.inject_default_parser()
         # self.args = config
 
-        self.continue_state_object = self.config.model.continue_path
-
         if 'WORLD_SIZE' in os.environ:
-            self.distributed = int(os.environ['WORLD_SIZE']) > 1
+            self.distributed = int(os.environ['WORLD_SIZE']) > 1 or torch.cuda.device_count() > 1
+        # if config.environ.gpu:
+        #     os.environ["CUDA_VISIBLE_DEVICES"] = config.environ.gpu
+        # self.distributed = torch.cuda.device_count() > 1
+
+        # set random seed
+        torch.manual_seed(config.environ.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(config.environ.seed)
+        np.random.seed(config.environ.seed)
+        random.seed(config.environ.seed)
+
+        cudnn.deterministic = True
 
         if self.distributed:
-            self.local_rank = self.config.environ.local_rank
+            # self.local_rank = self.config.environ.local_rank
             self.world_size = int(os.environ['WORLD_SIZE'])
-            torch.cuda.set_device(self.local_rank)
+            # torch.cuda.set_device(self.local_rank)
             dist.init_process_group(backend="nccl", init_method='env://')
             # self.devices = [i for i in range(self.world_size)]
+            # dist.init_process_group(backend="nccl")
+            self.local_rank = dist.get_rank()
+            # torch.cuda.set_device(self.local_rank)
         else:
             # self.devices = parse_devices(self.config.devices)
-            pass
-
-    # def inject_default_parser(self):
-    #     p = self.parser
-    #     p.add_argument('-d', '--devices', default='',
-    #                    help='set data parallel training')
-    #     p.add_argument('-c', '--continue', type=extant_file,
-    #                    metavar="FILE",
-    #                    dest="continue_fpath",
-    #                    help='continue from one certain checkpoint')
-    #     p.add_argument('--local_rank', default=0, type=int,
-    #                    help='process rank on node')
+            # pass
+            raise NotImplementedError
 
     def register_state(self, **kwargs):
         self.state.register(**kwargs)

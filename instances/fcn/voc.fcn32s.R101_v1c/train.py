@@ -20,7 +20,7 @@ from engine.engine import Engine
 from seg_opr.sync_bn import DataParallelModel, Reduce, BatchNorm2d
 
 try:
-    from apex.parallel import SyncBatchNorm
+    from third_libs.parallel import SyncBatchNorm
 except ImportError:
     raise ImportError(
         "Please install apex from https://www.github.com/nvidia/apex .")

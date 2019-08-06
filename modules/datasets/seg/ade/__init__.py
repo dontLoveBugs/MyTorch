@@ -1,3 +1,3 @@
-from .ade import ADE
+from .ade20k import ADE
 
 __all__ = ['ADE']

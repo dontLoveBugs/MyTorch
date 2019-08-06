@@ -34,7 +34,7 @@
         "eval_iter": 30,
         "eval_base_size": 480,
         "eval_crop_size": 480,
-        "eval_stride_rate": 0.6666666666666666,
+        "eval_stride_rate": 0.66666,
         "eval_flip": false,
         "eval_scale_array": [1]
     },

@@ -60,4 +60,4 @@ def get_train_loader(engine, dataset):
                                    pin_memory=True,
                                    sampler=train_sampler)
 
-    return train_loader, train_sampler
+    return train_loader, train_sampler, train_dataset.get_length() / batch_size

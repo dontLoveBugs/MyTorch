@@ -21,7 +21,7 @@ from engine.logger import get_logger
 from engine.engine import Engine
 
 try:
-    from apex.parallel import SyncBatchNorm, DistributedDataParallel
+    from third_libs.parallel import SyncBatchNorm, DistributedDataParallel
 except ImportError:
     raise ImportError(
         "Please install apex from https://www.github.com/nvidia/apex .")

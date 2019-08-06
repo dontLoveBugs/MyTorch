@@ -22,7 +22,7 @@ from engine.engine import Engine
 from seg_opr.loss_opr import SigmoidFocalLoss
 
 try:
-    from apex.parallel import DistributedDataParallel, SyncBatchNorm
+    from third_libs.parallel import DistributedDataParallel, SyncBatchNorm
 except ImportError:
     raise ImportError(
         "Please install apex from https://www.github.com/nvidia/apex .")
