@@ -13,7 +13,7 @@ import cv2
 
 import torch
 
-from modules.datasets.BaseDataset import BaseDataset
+from modules.datasets.old_ver import BaseDataset
 
 
 class ADE(BaseDataset):
