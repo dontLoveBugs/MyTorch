@@ -16,34 +16,26 @@ import torch.utils.data as data
 
 
 class BaseDataset(data.Dataset):
-    def __init__(self, root, split_name, preprocess=None):
+    def __init__(self, root, split='test', mode=None, preprocess=None):
         super(BaseDataset, self).__init__()
-        self._split_name = split_name
+        self.split = split
         self.root = root
-        self._file_names = self._get_file_names(split_name)
-        self._file_length = file_length
+        self.mode = mode if mode is not None else split
+        self.images, self.gts = self._get_pairs()
         self.preprocess = preprocess
 
     def __len__(self):
-        if self._file_length is not None:
-            return self._file_length
-        return len(self._file_names)
+        return len(self.images)
 
     def __getitem__(self, index):
-        if self._file_length is not None:
-            names = self._construct_new_file_names(self._file_length)[index]
-        else:
-            names = self._file_names[index]
-        img_path = os.path.join(self._img_path, names[0])
-        gt_path = os.path.join(self._gt_path, names[1])
-        item_name = names[1].split("/")[-1].split(".")[0]
+        img, gt = self._fetch_data(self.images[index], self.gts[index])
+        item_name = ""  # TODO
 
-        img, gt = self._fetch_data(img_path, gt_path)
         img = img[:, :, ::-1]
         if self.preprocess is not None:
             img, gt, extra_dict = self.preprocess(img, gt)
 
-        if self._split_name is 'train':
+        if self.split is 'train':
             img = torch.from_numpy(np.ascontiguousarray(img)).float()
             gt = torch.from_numpy(np.ascontiguousarray(gt)).long()
             if self.preprocess is not None and extra_dict is not None:
@@ -55,7 +47,7 @@ class BaseDataset(data.Dataset):
                         extra_dict[k] = extra_dict[k].float()
 
         output_dict = dict(data=img, label=gt, fn=str(item_name),
-                           n=len(self._file_names))
+                           n=len(self.images))
         if self.preprocess is not None and extra_dict is not None:
             output_dict.update(**extra_dict)
 
@@ -67,33 +59,8 @@ class BaseDataset(data.Dataset):
 
         return img, gt
 
-    def _get_file_names(self, split_name):
-        assert split_name in ['train', 'val']
-        source = self._train_source
-        if split_name == "val":
-            source = self._eval_source
-
-        file_names = []
-        with open(source) as f:
-            files = f.readlines()
-
-        for item in files:
-            img_name, gt_name = self._process_item_names(item)
-            file_names.append([img_name, gt_name])
-
-        return file_names
-
-    def _construct_new_file_names(self, length):
-        assert isinstance(length, int)
-        files_len = len(self._file_names)
-        new_file_names = self._file_names * (length // files_len)
-
-        rand_indices = torch.randperm(files_len).tolist()
-        new_indices = rand_indices[:length % files_len]
-
-        new_file_names += [self._file_names[i] for i in new_indices]
-
-        return new_file_names
+    def _get_pairs(self, split_name):
+        raise NotImplementedError
 
     @staticmethod
     def _process_item_names(item):
