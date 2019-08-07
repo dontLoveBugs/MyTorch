@@ -7,10 +7,6 @@ from easydict import EasyDict as edict
 from modules.utils.img_utils import random_scale, random_mirror, normalize, \
     generate_random_crop_pos, random_crop_pad_to_shape
 
-"""
-    重新实现数据读取
-"""
-
 
 class TrainPre(object):
     def __init__(self, config):
@@ -35,8 +31,6 @@ class TrainPre(object):
 
         extra_dict = None
 
-        # print('# pre img:', img.shape, ' gt:', gt.shape)
-
         return p_img, p_gt, extra_dict
 
 
@@ -47,6 +41,7 @@ def get_train_loader(engine, dataset):
     train_sampler = None
     is_shuffle = True
     batch_size = engine.config.train.batch_size
+    niters_per_epoch = int(np.ceil(train_dataset.get_length() // batch_size))
 
     if engine.distributed:
         train_sampler = torch.utils.data.distributed.DistributedSampler(
@@ -62,4 +57,4 @@ def get_train_loader(engine, dataset):
                                    pin_memory=False,
                                    sampler=train_sampler)
 
-    return train_loader, train_sampler, train_dataset.get_length() // batch_size
+    return train_loader, train_sampler, niters_per_epoch

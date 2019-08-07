@@ -1,11 +1,8 @@
 from __future__ import division
-import sys
-import argparse
 from tqdm import tqdm
 
 import torch
 import torch.nn as nn
-import torch.backends.cudnn as cudnn
 
 import sys
 
@@ -13,37 +10,32 @@ sys.path.append("..")
 
 from modules.utils.config import Config
 
-from run.dataloader import get_train_loader
+from run.data import get_train_loader
 from run.network import PSPNet
 
 from modules.datasets.seg.ade import ADE
 from modules.utils.init_func import init_weight, group_weight
 from modules.utils.pyt_utils import all_reduce_tensor
 from modules.engine.lr_policy import PolyLR
-from modules.engine.logger import get_logger
 from modules.engine.engine import Engine
 
 try:
-    from modules.sync_bn.apex.parallel import SyncBatchNorm, DistributedDataParallel
+    from apex.parallel import SyncBatchNorm, DistributedDataParallel
 except ImportError:
     raise ImportError(
         "Please install apex from https://www.github.com/nvidia/apex .")
 
-logger = get_logger()
+"""
+Usage: python -m torch.distributed.launch --nproc_per_node=$NGPUS train.py
+"""
 
-# 读取配置文件
+# read trainig confi file
 config = Config(config_file='./config.json').get_config()
 
-#
-
-
-parser = argparse.ArgumentParser()
+# set validator to monitor training engine.
+# validator =
 
 with Engine(config=config) as engine:
-    # args = parser.parse_args()
-
-    # if engine.distributed:
-    #     torch.cuda.set_device(engine.local_rank)
 
     # data loader
     train_loader, train_sampler, niters_per_epoch = get_train_loader(engine, ADE)
@@ -53,7 +45,7 @@ with Engine(config=config) as engine:
                                     ignore_index=-1)
 
     if engine.distributed:
-        logger.info('Use the Multi-Process-SyncBatchNorm')
+        engine.logger.info('Use the Multi-Process-SyncBatchNorm')
         BatchNorm2d = SyncBatchNorm
     else:
         BatchNorm2d = nn.BatchNorm2d
@@ -91,6 +83,8 @@ with Engine(config=config) as engine:
 
     engine.register_state(dataloader=train_loader, model=model,
                           optimizer=optimizer)
+
+    # read stored model.
     if engine.continue_state_object:
         engine.restore_checkpoint()
 
@@ -118,13 +112,14 @@ with Engine(config=config) as engine:
 
             # reduce the whole loss over multi-gpu
             if engine.distributed:
-                reduce_loss = all_reduce_tensor(loss,
-                                                world_size=engine.world_size)
+                reduce_loss = all_reduce_tensor(loss, world_size=engine.world_size)
 
+            # backward
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
+            # reset learning rate
             current_idx = epoch * niters_per_epoch + idx
             lr = lr_policy.get_lr(current_idx)
 
@@ -140,7 +135,7 @@ with Engine(config=config) as engine:
 
             pbar.set_description(print_str, refresh=False)
 
-        if (epoch >= config.nepochs - 20) or (
+        if (epoch >= config.train.nepochs - 20) or (
                 epoch % config.log.snapshot_iter == 0):
             if engine.distributed and (engine.local_rank == 0):
                 engine.save_and_link_checkpoint(config.log.snapshot_dir,

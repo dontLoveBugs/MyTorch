@@ -60,11 +60,10 @@ class PSPNet(nn.Module):
             aux_loss = self.criterion(aux_fm, label)
             loss = loss + 0.4 * aux_loss
 
-            # TODO: cumpute score
-
-            # TODO: visulization
-
-            return loss
+            if self.training:
+                return loss
+            else:
+                return loss, psp_fm
 
         return psp_fm
 

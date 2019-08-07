@@ -1,8 +1,6 @@
 {
     "environ" :
     {
-        "devide": "",
-        "gpu": "0, 1, 2, 3",
         "seed": 304,
         "repo_name": "MyTorch"
     },
@@ -20,7 +18,7 @@
 
     "train" :
     {
-        "batch_size": 4,
+        "batch_size": 12,
         "lr": 0.01,
         "lr_power": 0.9,
         "momentum": 0.9,

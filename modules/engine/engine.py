@@ -13,14 +13,13 @@ import random
 
 import torch
 import torch.distributed as dist
-from torch.backends import cudnn
+import torch.backends.cudnn as cudnn
 
 from .logger import get_logger
 from .version import __version__
-from modules.utils.pyt_utils import load_model, parse_devices, extant_file, link_file, \
-    ensure_dir
+from modules.utils.pyt_utils import load_model, link_file, ensure_dir
 
-logger = get_logger()
+from modules.utils.tb_logger import Logger
 
 
 class State(object):
@@ -44,29 +43,19 @@ class Engine(object):
         :param config: easydict
         """
         self.version = __version__
-        logger.info(
-            "PyTorch Version {}, Furnace Version {}".format(torch.__version__,
+        self.logger = get_logger()
+        self.logger.info(
+            "PyTorch Version {}, MyTorch Version {}".format(torch.__version__,
                                                             self.version))
         self.state = State()
-        self.devices = None
         self.distributed = False
+        self.local_rank = 0
 
-        # if custom_parser is None:
-        #     self.parser = argparse.ArgumentParser()
-        # else:
-        #     assert isinstance(custom_parser, argparse.ArgumentParser)
-        #     self.parser = custom_parser
         self.config = config
         self.continue_state_object = self.config.model.continue_path
 
-        # self.inject_default_parser()
-        # self.args = config
-
         if 'WORLD_SIZE' in os.environ:
             self.distributed = int(os.environ['WORLD_SIZE']) > 1 or torch.cuda.device_count() > 1
-        # if config.environ.gpu:
-        #     os.environ["CUDA_VISIBLE_DEVICES"] = config.environ.gpu
-        # self.distributed = torch.cuda.device_count() > 1
 
         # set random seed
         torch.manual_seed(config.environ.seed)
@@ -75,21 +64,22 @@ class Engine(object):
         np.random.seed(config.environ.seed)
         random.seed(config.environ.seed)
 
+        # cudnn.benchmark = True
         cudnn.deterministic = True
+        assert torch.backends.cudnn.enabled, "Amp requires cudnn backend to be enabled."
 
         if self.distributed:
-            # self.local_rank = self.config.environ.local_rank
             self.world_size = int(os.environ['WORLD_SIZE'])
-            # torch.cuda.set_device(self.local_rank)
             dist.init_process_group(backend="nccl", init_method='env://')
-            # self.devices = [i for i in range(self.world_size)]
-            # dist.init_process_group(backend="nccl")
             self.local_rank = dist.get_rank()
-            # torch.cuda.set_device(self.local_rank)
+            torch.cuda.set_device(self.local_rank)
+            self.logger.info('world size: {}, local rank: {}.'.format(self.world_size, self.local_rank))
         else:
-            # self.devices = parse_devices(self.config.devices)
-            # pass
             raise NotImplementedError
+
+        # tensorboard logger
+        if self.local_rank == 0:
+            self.tb_logger = Logger(self.config.log.snapshot_dir)
 
     def register_state(self, **kwargs):
         self.state.register(**kwargs)
@@ -99,7 +89,7 @@ class Engine(object):
         self.state.iteration = iteration
 
     def save_checkpoint(self, path):
-        logger.info("Saving checkpoint to file {}".format(path))
+        self.logger.info("Saving checkpoint to file {}".format(path))
         t_start = time.time()
 
         state_dict = {}
@@ -122,7 +112,7 @@ class Engine(object):
         del state_dict
         del new_state_dict
         t_end = time.time()
-        logger.info(
+        self.logger.info(
             "Save checkpoint to file {}, "
             "Time usage:\n\tprepare snapshot: {}, IO: {}".format(
                 path, t_iobegin - t_start, t_end - t_iobegin))
@@ -155,7 +145,7 @@ class Engine(object):
         self.state.iteration = tmp['iteration']
         del tmp
         t_end = time.time()
-        logger.info(
+        self.logger.info(
             "Load checkpoint from file {}, "
             "Time usage:\n\tIO: {}, restore snapshot: {}".format(
                 self.continue_state_object, t_ioend - t_start, t_end - t_ioend))
@@ -166,7 +156,10 @@ class Engine(object):
     def __exit__(self, type, value, tb):
         torch.cuda.empty_cache()
         if type is not None:
-            logger.warning(
+            self.logger.warning(
                 "A exception occurred during Engine initialization, "
                 "give up running process")
             return False
+
+        if self.local_rank == 0:
+            self.tb_logger.close()

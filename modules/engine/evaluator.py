@@ -9,9 +9,9 @@ import torch
 import torch.nn.functional as F
 import torch.multiprocessing as mp
 
-from engine.logger import get_logger
-from utils.pyt_utils import load_model, link_file, ensure_dir
-from utils.img_utils import pad_image_to_shape, normalize
+from modules.engine.logger import get_logger
+from modules.utils.pyt_utils import load_model, link_file, ensure_dir
+from modules.utils.img_utils import pad_image_to_shape, normalize
 
 logger = get_logger()
 
