@@ -12,10 +12,12 @@ from modules.utils.config import Config
 
 from run.data import get_train_loader
 from run.network import PSPNet
+from run.validator import Validator
 
 from modules.datasets.seg.ade import ADE
 from modules.utils.init_func import init_weight, group_weight
 from modules.utils.pyt_utils import all_reduce_tensor
+from modules.utils.average_meter import AverageMeter
 from modules.engine.lr_policy import PolyLR
 from modules.engine.engine import Engine
 
@@ -32,10 +34,12 @@ Usage: python -m torch.distributed.launch --nproc_per_node=$NGPUS train.py
 # read trainig confi file
 config = Config(config_file='./config.json').get_config()
 
-# set validator to monitor training engine.
-# validator =
-
 with Engine(config=config) as engine:
+    # set validator to monitor training engine.
+    if engine.local_rank == 0:
+        loss_meter = AverageMeter()
+        validator = Validator(device=engine.local_rank,
+                              config=config, out_id=[1])
 
     # data loader
     train_loader, train_sampler, niters_per_epoch = get_train_loader(engine, ADE)
@@ -111,8 +115,9 @@ with Engine(config=config) as engine:
             loss = model(imgs, gts)
 
             # reduce the whole loss over multi-gpu
-            if engine.distributed:
-                reduce_loss = all_reduce_tensor(loss, world_size=engine.world_size)
+            reduce_loss = all_reduce_tensor(loss, world_size=engine.world_size) if engine.distributed else loss
+            if engine.local_rank == 0:
+                loss_meter.update(reduce_loss)
 
             # backward
             optimizer.zero_grad()
@@ -145,3 +150,13 @@ with Engine(config=config) as engine:
                 engine.save_and_link_checkpoint(config.log.log.snapshot_dir,
                                                 config.log.log_dir,
                                                 config.log.log_dir_link)
+
+        # visualization
+        if engine.local_rank == 0:
+            loss_meter.reset()
+            val_loss, result, out_imgs = validator.eval(model.module)
+            engine.tb_logger.add_scalars('TrainVal', {'train:', loss_meter.avg, 'val:', val_loss}, epoch)
+            engine.tb_logger.add_scalar('Train', result, epoch)
+
+        model.train()
+

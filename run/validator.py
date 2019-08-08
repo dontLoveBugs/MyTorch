@@ -12,119 +12,72 @@ import cv2
 
 from easydict import EasyDict as edict
 
+# from modules.datasets.seg.BaseDataset import BaseDataset
+from modules.datasets.seg.ade.ade20k import ADE
 from modules.utils.img_utils import pad_image_to_shape, normalize
+from modules.utils.visualize import get_color_pallete
+from modules.metircs.seg.metric import SegMetric
 
 
 class Validator(object):
-
-    def __init__(self, model, config=None):
-
+    def __init__(self, dataset, config, device, out_id=[1]):
+        """
+        :param model: module
+        :param device: validator should be run in device(local rank = 0).
+        :param config: easydict
+        :param out_id: [int, ...],
+                        the index of eval images which you wanna visualize.
+        """
         assert isinstance(config, edict), "config is not easy dict."
 
         self.dataset = dataset
         self.ndata = self.dataset.get_length()
-        self.class_num = class_num
-        self.image_mean = image_mean
-        self.image_std = image_std
-        self.multi_scales = multi_scales
-        self.is_flip = is_flip
+        self.class_num = config.data.num_classes
+        self.image_mean = config.data.image_mean
+        self.image_std = config.data.image_std
 
-        self.model = model
+        self.config = config
 
-    def run(self):
-        raise NotImplementedError
+        self.device = device
+        self.metric = SegMetric(n_classes=self.class_num)
+        self.out_id = out_id
 
-    # slide the window to evaluate the image
-    def sliding_eval(self, img, crop_size, stride_rate, device=None):
-        ori_rows, ori_cols, c = img.shape
-        processed_pred = np.zeros((ori_rows, ori_cols, self.class_num))
+        self.val_func = None
 
-        for s in self.multi_scales:
-            img_scale = cv2.resize(img, None, fx=s, fy=s,
-                                   interpolation=cv2.INTER_LINEAR)
-            new_rows, new_cols, _ = img_scale.shape
-            processed_pred += self.scale_process(img_scale,
-                                                 (ori_rows, ori_cols),
-                                                 crop_size, stride_rate, device)
+    def eval(self, model):
+        self.val_func = model
+        self.val_func.eval()
+        out_images = None
+        sum_loss = 0.0
+        for idx in range(self.ndata):
+            data = self.dataset[idx]['data']
+            label = self.dataset[idx]['label']
+            loss, pred = self.val_func_process(data, label, self.device)
+            sum_loss += loss.item()
+            self.metric.update(pred, label)
 
-        pred = processed_pred.argmax(2)
+            if idx in self.out_id:
+                tmp_imgs = np.vstack([data,
+                                      get_color_pallete(data, label,
+                                                        self.dataset.get_class_colors(), self.config.data.background),
+                                      get_color_pallete(data, pred,
+                                                        self.dataset.get_class_colors(), self.config.data.background)])
+                out_images = tmp_imgs if out_images is None else np.hstack(out_images, tmp_imgs)
 
-        return pred
+        return sum_loss / self.dataset.get_length(), self.metric.get_scores(), out_images
 
-    def scale_process(self, img, ori_shape, crop_size, stride_rate,
-                      device=None):
-        new_rows, new_cols, c = img.shape
-        long_size = new_cols if new_cols > new_rows else new_rows
+    def val_func_process(self, data, label, device=None):
+        data = self.pre_process(data)
+        data = torch.FloatTensor(data).cuda(device).unsqueeze(0)
+        label = torch.LongTensor(label).cuda(device).unsqueeze(0)
 
-        if long_size <= crop_size:
-            input_data, margin = self.process_image(img, crop_size)
-            score = self.val_func_process(input_data, device)
-            score = score[:, margin[0]:(score.shape[1] - margin[1]),
-                    margin[2]:(score.shape[2] - margin[3])]
-        else:
-            stride = int(np.ceil(crop_size * stride_rate))
-            img_pad, margin = pad_image_to_shape(img, crop_size,
-                                                 cv2.BORDER_CONSTANT, value=0)
+        with torch.no_grad():
+            loss, pred = self.val_func(data, label)
+            pred = torch.exp(pred)  # the output of network is log_softmax,
 
-            pad_rows = img_pad.shape[0]
-            pad_cols = img_pad.shape[1]
-            r_grid = int(np.ceil((pad_rows - crop_size) / stride)) + 1
-            c_grid = int(np.ceil((pad_cols - crop_size) / stride)) + 1
-            data_scale = torch.zeros(self.class_num, pad_rows, pad_cols).cuda(
-                device)
-            count_scale = torch.zeros(self.class_num, pad_rows, pad_cols).cuda(
-                device)
+        return pred.unsqueeze(0), loss.item()
 
-            for grid_yidx in range(r_grid):
-                for grid_xidx in range(c_grid):
-                    s_x = grid_xidx * stride
-                    s_y = grid_yidx * stride
-                    e_x = min(s_x + crop_size, pad_cols)
-                    e_y = min(s_y + crop_size, pad_rows)
-                    s_x = e_x - crop_size
-                    s_y = e_y - crop_size
-                    img_sub = img_pad[s_y:e_y, s_x: e_x, :]
-                    count_scale[:, s_y: e_y, s_x: e_x] += 1
-
-                    input_data, tmargin = self.process_image(img_sub, crop_size)
-                    temp_score = self.val_func_process(input_data, device)
-                    temp_score = temp_score[:,
-                                 tmargin[0]:(temp_score.shape[1] - tmargin[1]),
-                                 tmargin[2]:(temp_score.shape[2] - tmargin[3])]
-                    data_scale[:, s_y: e_y, s_x: e_x] += temp_score
-            # score = data_scale / count_scale
-            score = data_scale
-            score = score[:, margin[0]:(score.shape[1] - margin[1]),
-                    margin[2]:(score.shape[2] - margin[3])]
-
-        score = score.permute(1, 2, 0)
-        data_output = cv2.resize(score.cpu().numpy(),
-                                 (ori_shape[1], ori_shape[0]),
-                                 interpolation=cv2.INTER_LINEAR)
-
-        return data_output
-
-    def val_func_process(self, input_data, device=None):
-        input_data = np.ascontiguousarray(input_data[None, :, :, :], dtype=np.float32)
-        input_data = torch.FloatTensor(input_data).cuda(device)
-
-        with torch.cuda.device(input_data.get_device()):
-            self.model.eval()
-            self.model.to(input_data.get_device())
-            with torch.no_grad():
-                score = self.val_func(input_data)
-                score = score[0]
-
-                if self.is_flip:
-                    input_data = input_data.flip(-1)
-                    score_flip = self.model(input_data)
-                    score_flip = score_flip[0]
-                    score += score_flip.flip(-1)
-                score = torch.exp(score)
-
-        return score
-
-    def process_image(self, img, crop_size=None):
+    def pre_process(self, img):
         p_img = img
 
         if img.shape[2] < 3:
@@ -134,13 +87,5 @@ class Validator(object):
             p_img = np.concatenate((im_b, im_g, im_r), axis=2)
 
         p_img = normalize(p_img, self.image_mean, self.image_std)
-
-        if crop_size is not None:
-            p_img, margin = pad_image_to_shape(p_img, crop_size,
-                                               cv2.BORDER_CONSTANT, value=0)
-            p_img = p_img.transpose(2, 0, 1)
-            return p_img, margin
-
         p_img = p_img.transpose(2, 0, 1)
-
         return p_img

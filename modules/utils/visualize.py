@@ -12,6 +12,20 @@ def set_img_color(colors, background, img, gt, show255=False):
     return img
 
 
+def get_color_pallete(img, pred, colors, background):
+    """
+    :param img:
+    :param pred:
+    :param colors:     [int, ..]
+    :param background: int, color value of background
+    :return:
+    """
+    im = np.array(img, np.uint8)
+    set_img_color(colors, background, im, pred)
+    final = np.array(im)
+    return final
+
+
 def show_prediction(colors, background, img, pred):
     im = np.array(img, np.uint8)
     set_img_color(colors, background, im, pred)

@@ -34,9 +34,8 @@ class ADE(BaseDataset):
 
         return img_name, gt_name
 
-    @classmethod
-    def get_class_colors(*args):
-        color_list = sio.loadmat(osp.join('.', 'color150.mat'))
+    def get_class_colors(self, *args):
+        color_list = sio.loadmat(osp.join(self.root, 'color150.mat'))
         color_list = color_list['colors']
         color_list = color_list[:, ::-1, ]
         color_list = np.array(color_list).astype(int).tolist()
@@ -157,17 +156,23 @@ if __name__ == '__main__':
     ade_train = ADE(root='/data/wangxin/ADEChallengeData2016', split='train')
     ade_val = ADE(root='/data/wangxin/ADEChallengeData2016', split='val')
 
-    from torch.utils.data.dataloader import DataLoader
-    d_train = DataLoader(ade_train, batch_size=1)
-    d_val = DataLoader(ade_val, batch_size=1, shuffle=False)
+    # from torch.utils.data.dataloader import DataLoader
+    # d_train = DataLoader(ade_train, batch_size=1)
+    # d_val = DataLoader(ade_val, batch_size=1, shuffle=False)
+    #
+    # print('num of train:', len(d_train))
+    # print('num of test:', len(d_val))
+    #
+    # for i, d in enumerate(d_train):
+    #     print(i, d['fn'], d['data'].shape, d['label'].shape)
+    #
+    #
+    # for i, d in enumerate(d_val):
+    #     print(i, d['fn'], d['data'].shape, d['label'].shape)
 
-    print('num of train:', len(d_train))
-    print('num of test:', len(d_val))
+    for i in range(ade_train.get_length()):
+        print(i, ade_train[i])
 
-    for i, d in enumerate(d_train):
-        print(i, d['fn'], d['data'].shape, d['label'].shape)
+    print(ade_train.get_class_colors())
 
-
-    for i, d in enumerate(d_val):
-        print(i, d['fn'], d['data'].shape, d['label'].shape)
 

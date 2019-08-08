@@ -76,12 +76,12 @@ class BaseDataset(data.Dataset):
 
         return img
 
-    @classmethod
-    def get_class_colors(*args):
+    # @classmethod
+    def get_class_colors(self, *args):
         raise NotImplementedError
 
-    @classmethod
-    def get_class_names(*args):
+    # @classmethod
+    def get_class_names(self, *args):
         raise NotImplementedError
 
 

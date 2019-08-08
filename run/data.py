@@ -15,8 +15,8 @@ class TrainPre(object):
 
     def __call__(self, img, gt):
         img, gt = random_mirror(img, gt)
-        if self.config.get('train_scale_array') is not None:
-            img, gt, scale = random_scale(img, gt, self.config.train_scale_array)
+        if self.config.get('scale_array') is not None:
+            img, gt, scale = random_scale(img, gt, self.config.scale_array)
 
         img = normalize(img, self.config.image_mean, self.config.image_std)
 
