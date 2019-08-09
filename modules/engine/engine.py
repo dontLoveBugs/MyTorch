@@ -12,6 +12,8 @@ import cv2
 import numpy as np
 import random
 
+import shutil
+
 import torch
 import torch.distributed as dist
 import torch.backends.cudnn as cudnn
@@ -52,8 +54,7 @@ class Engine(object):
         self.distributed = False
         self.local_rank = 0
 
-        self.config = config.get_config()
-        self._config = config
+        self.config = config
         self.continue_state_object = self.config.model.continue_path
 
         if 'WORLD_SIZE' in os.environ:
@@ -135,10 +136,11 @@ class Engine(object):
         filenames = osp.join(snapshot_dir, filenames)
         cv2.imwrite(filenames, image)
 
-    def save_config(self, snapshot_dir):
+    def copy_config(self, snapshot_dir, config_file):
         ensure_dir(snapshot_dir)
-        filename = osp.join(snapshot_dir, 'config.json')
-        self._config.save(filename)
+        assert osp.exists(config_file), "config file is not existed."
+        new_file_name = osp.join(snapshot_dir, 'config.json')
+        shutil.copy(config_file, new_file_name)
 
     def restore_checkpoint(self):
         t_start = time.time()

@@ -32,14 +32,15 @@ Usage: python -m torch.distributed.launch --nproc_per_node=$NGPUS train.py
 """
 
 # read trainig confi file
-config = Config(config_file='./config.json')
+config_file = './config.json'
+config = Config(config_file=config_file).get_config()
 
 with Engine(config=config) as engine:
     loss_meter = AverageMeter()
     # set validator to monitor training engine.
     if engine.local_rank == 0:
         # save config
-        engine.save_config(config.log.snapshot_dir)
+        engine.copy_config(config.log.snapshot_dir, config_file)
         val_set = ADE(config.data.dataset_path, split='val')
         validator = Validator(dataset=val_set,
                               device=engine.local_rank,
@@ -47,7 +48,6 @@ with Engine(config=config) as engine:
 
     # data loader
     train_loader, train_sampler, niters_per_epoch = get_train_loader(engine, ADE)
-    niters_per_epoch = 100
 
     # config network and criterion
     criterion = nn.CrossEntropyLoss(reduction='mean',
