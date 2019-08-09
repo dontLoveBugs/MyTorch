@@ -32,17 +32,22 @@ Usage: python -m torch.distributed.launch --nproc_per_node=$NGPUS train.py
 """
 
 # read trainig confi file
-config = Config(config_file='./config.json').get_config()
+config = Config(config_file='./config.json')
 
 with Engine(config=config) as engine:
+    loss_meter = AverageMeter()
     # set validator to monitor training engine.
     if engine.local_rank == 0:
-        loss_meter = AverageMeter()
-        validator = Validator(device=engine.local_rank,
+        # save config
+        engine.save_config(config.log.snapshot_dir)
+        val_set = ADE(config.data.dataset_path, split='val')
+        validator = Validator(dataset=val_set,
+                              device=engine.local_rank,
                               config=config, out_id=[1])
 
     # data loader
     train_loader, train_sampler, niters_per_epoch = get_train_loader(engine, ADE)
+    niters_per_epoch = 100
 
     # config network and criterion
     criterion = nn.CrossEntropyLoss(reduction='mean',
@@ -116,8 +121,7 @@ with Engine(config=config) as engine:
 
             # reduce the whole loss over multi-gpu
             reduce_loss = all_reduce_tensor(loss, world_size=engine.world_size) if engine.distributed else loss
-            if engine.local_rank == 0:
-                loss_meter.update(reduce_loss)
+            loss_meter.update(reduce_loss.item())
 
             # backward
             optimizer.zero_grad()
@@ -136,27 +140,31 @@ with Engine(config=config) as engine:
             print_str = 'Epoch{}/{}'.format(epoch, config.train.nepochs) \
                         + ' Iter{}/{}:'.format(idx + 1, niters_per_epoch) \
                         + ' lr=%.2e' % lr \
-                        + ' loss=%.2f' % reduce_loss.item()
+                        + ' loss=%.2f' % reduce_loss.item() \
+                        + '(%.2f)' % loss_meter.avg
 
             pbar.set_description(print_str, refresh=False)
 
-        if (epoch >= config.train.nepochs - 20) or (
-                epoch % config.log.snapshot_iter == 0):
-            if engine.distributed and (engine.local_rank == 0):
-                engine.save_and_link_checkpoint(config.log.snapshot_dir,
-                                                config.log.log_dir,
-                                                config.log.log_dir_link)
-            elif not engine.distributed:
-                engine.save_and_link_checkpoint(config.log.log.snapshot_dir,
-                                                config.log.log_dir,
-                                                config.log.log_dir_link)
+        if engine.distributed and (engine.local_rank == 0):
+            engine.save_and_link_checkpoint(config.log.snapshot_dir,
+                                            config.log.log_dir,
+                                            config.log.log_dir_link)
+        elif not engine.distributed:
+            engine.save_and_link_checkpoint(config.log.log.snapshot_dir,
+                                            config.log.log_dir,
+                                            config.log.log_dir_link)
 
         # visualization
         if engine.local_rank == 0:
-            loss_meter.reset()
             val_loss, result, out_imgs = validator.eval(model.module)
-            engine.tb_logger.add_scalars('TrainVal', {'train:', loss_meter.avg, 'val:', val_loss}, epoch)
-            engine.tb_logger.add_scalar('Train', result, epoch)
+            engine.tb_logger.add_scalars_list('TrainVal', [{'train': loss_meter.avg, 'val': val_loss}], epoch)
+            engine.tb_logger.add_scalar_dicts('Train', result, epoch)
+            loss_meter.reset()
+
+            engine.save_images(config.log.snapshot_dir,
+                               'compare_' + str(epoch) + '.png', out_imgs)
+            engine.logger.info('Epoch {} Validation: '.format(epoch)
+                               + 'mean acc:%.2f' % result.acc
+                               + ', mean iou:%.2f' % result.mean_iu)
 
         model.train()
-

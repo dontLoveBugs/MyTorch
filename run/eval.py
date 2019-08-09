@@ -20,6 +20,8 @@ from modules.datasets.seg.ade import ADE
 
 
 logger = get_logger()
+# read trainig confi file
+config = Config(config_file='./config.json').get_config()
 
 
 class SegEvaluator(Evaluator):
@@ -29,9 +31,9 @@ class SegEvaluator(Evaluator):
         name = data['fn']
         label = label - 1
 
-        pred = self.sliding_eval(img, config.eval_crop_size,
-                                 config.eval_stride_rate, device)
-        hist_tmp, labeled_tmp, correct_tmp = hist_info(config.num_classes,
+        pred = self.sliding_eval(img, config.eval.crop_size,
+                                 config.eval.stride_rate, device)
+        hist_tmp, labeled_tmp, correct_tmp = hist_info(config.data.num_classes,
                                                        pred,
                                                        label)
         results_dict = {'hist': hist_tmp, 'labeled': labeled_tmp,
@@ -46,7 +48,7 @@ class SegEvaluator(Evaluator):
             colors = self.dataset.get_class_colors
             image = img
             clean = np.zeros(label.shape)
-            comp_img = show_img(colors, config.background, image, clean,
+            comp_img = show_img(colors, config.data.background, image, clean,
                                 label,
                                 pred)
             cv2.imshow('comp_image', comp_img)
@@ -55,7 +57,7 @@ class SegEvaluator(Evaluator):
         return results_dict
 
     def compute_metric(self, results):
-        hist = np.zeros((config.num_classes, config.num_classes))
+        hist = np.zeros((config.data.num_classes, config.data.num_classes))
         correct = 0
         labeled = 0
         count = 0
@@ -85,18 +87,15 @@ if __name__ == "__main__":
     all_dev = parse_devices(args.devices)
 
     mp_ctx = mp.get_context('spawn')
-    network = PSPNet(config.num_classes, criterion=None)
-    data_setting = {'img_root': config.img_root_folder,
-                    'gt_root': config.gt_root_folder,
-                    'train_source': config.train_source,
-                    'eval_source': config.eval_source}
-    dataset = ADE(data_setting, 'val', None)
+    network = PSPNet(config.data.num_classes, criterion=None)
+    dataset = ADE(config.data.dataset_path, 'val', None)
 
     with torch.no_grad():
-        segmentor = SegEvaluator(dataset, config.num_classes, config.image_mean,
-                                 config.image_std, network,
-                                 config.eval_scale_array, config.eval_flip,
+        segmentor = SegEvaluator(dataset, config.data.num_classes,
+                                 config.data.image_mean,
+                                 config.data.image_std, network,
+                                 config.eval.scale_array, config.eval.flip,
                                  all_dev, args.verbose, args.save_path,
                                  args.show_image)
-        segmentor.run(config.snapshot_dir, args.epochs, config.val_log_file,
-                      config.link_val_log_file)
+        segmentor.run(config.log.snapshot_dir, args.epochs, config.log.val_log_file,
+                      config.log.link_val_log_file)

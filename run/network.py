@@ -42,14 +42,15 @@ class PSPNet(nn.Module):
         self.criterion = criterion
 
     def forward(self, data, label=None):
+        _, _, h, w = data.size()
         blocks = self.backbone(data)
 
         psp_fm = self.psp_layer(blocks[-1])
         aux_fm = self.aux_layer(blocks[-2])
 
-        psp_fm = F.interpolate(psp_fm, scale_factor=8, mode='bilinear',
+        psp_fm = F.interpolate(psp_fm, size=(h, w), mode='bilinear',
                                align_corners=True)
-        aux_fm = F.interpolate(aux_fm, scale_factor=8, mode='bilinear',
+        aux_fm = F.interpolate(aux_fm, size=(h, w), mode='bilinear',
                                align_corners=True)
         psp_fm = F.log_softmax(psp_fm, dim=1)
         aux_fm = F.log_softmax(aux_fm, dim=1)

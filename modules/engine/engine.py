@@ -8,6 +8,7 @@ import os
 import os.path as osp
 import time
 
+import cv2
 import numpy as np
 import random
 
@@ -51,7 +52,8 @@ class Engine(object):
         self.distributed = False
         self.local_rank = 0
 
-        self.config = config
+        self.config = config.get_config()
+        self._config = config
         self.continue_state_object = self.config.model.continue_path
 
         if 'WORLD_SIZE' in os.environ:
@@ -127,6 +129,16 @@ class Engine(object):
         last_epoch_checkpoint = osp.join(snapshot_dir,
                                          'epoch-last.pth')
         link_file(current_epoch_checkpoint, last_epoch_checkpoint)
+
+    def save_images(self, snapshot_dir, filenames, image):
+        ensure_dir(snapshot_dir)
+        filenames = osp.join(snapshot_dir, filenames)
+        cv2.imwrite(filenames, image)
+
+    def save_config(self, snapshot_dir):
+        ensure_dir(snapshot_dir)
+        filename = osp.join(snapshot_dir, 'config.json')
+        self._config.save(filename)
 
     def restore_checkpoint(self):
         t_start = time.time()

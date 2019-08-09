@@ -50,7 +50,7 @@ class SegMetric(object):
         mean_iu = np.nanmean(iu)
         freq = hist.sum(axis=1) / hist.sum()
         fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
-        cls_iu = dict(zip(range(self.n_classes), iu))
+        # cls_iu = dict(zip(range(self.n_classes), iu))
 
         # return acc, acc_cls, fwavacc, mean_iu, cls_iu
         result = edict()
@@ -58,7 +58,7 @@ class SegMetric(object):
         result.acc_cls = acc_cls
         result.fwavacc = fwavacc
         result.mean_iu = mean_iu
-        result.cls_iu = cls_iu
+        # result.cls_iu = cls_iu
         return result
 
     def get_mean_iou(self):

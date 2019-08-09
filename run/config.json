@@ -49,10 +49,8 @@
         "is_test": false
     },
 
-    "display":
+    "snapshot":
     {
-        "snapshot_iter": 10,
-        "record_info_iter": 20,
-        "display_iter": 50
+        "name": "torchseg"
     }
 }

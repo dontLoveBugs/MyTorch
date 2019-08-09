@@ -9,13 +9,16 @@
 
 import os
 import shutil
+import socket
 from datetime import datetime
 
 from torch.utils.tensorboard import SummaryWriter
+from modules.utils.pyt_utils import ensure_dir
 
 
 def create_logger(logdir=None):
-    assert os.path.exists(logdir), 'Log file dir is not existed.'
+    # assert os.path.exists(logdir), 'Log file dir is not existed.'
+    ensure_dir(logdir)
 
     log_path = os.path.join(logdir, 'tensorboard',
                             datetime.now().strftime('%b%d_%H-%M-%S') + '_' + socket.gethostname())
@@ -32,7 +35,7 @@ class Logger(object):
         super(Logger, self).__init__()
         self.logger = create_logger(logdir)
 
-    def add_scalar(self, tag, scalar_dicts, it):
+    def add_scalar_dicts(self, tag, scalar_dicts, it):
         """
         :param tag: str, train, eval or test.
         :param scalar_dicts:
@@ -42,10 +45,10 @@ class Logger(object):
         """
 
         assert isinstance(scalar_dicts, dict), 'scalar dict must be dict type.'
-        for k, v in enumerate(scalar_dicts):
+        for k, v in scalar_dicts.items():
             self.logger.add_scalar(tag + '/' + k, v, it)
 
-    def add_scalars(self, tag, scalars_list, it):
+    def add_scalars_list(self, tag, scalars_list, it):
         """
         :param tag: str, it generally is 'trainval'
         :param scalars_list:

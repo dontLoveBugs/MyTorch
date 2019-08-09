@@ -52,21 +52,19 @@ class Config(object):
 
     def load(self, defaults=None):
         with open(self.config_file, "r") as fd:
-            self.config = json.load(fd)
+            self.config_json = json.load(fd)
 
         # if defaults is not None:
         #     _merge(defaults, self.config)
 
-        # self.config['image_mean'] = np.array(self.config['image_mean'])  # 0.485, 0.456, 0.406
-        # self.config['image_std'] = np.array(self.config['image_std'])
-
-        self.config = edict(self.config)
+        self.config = edict(self.config_json)
         self.config.data.image_mean = np.array(self.config.data.image_mean)
         self.config.data.image_std = np.array(self.config.data.image_std)
 
-    def save(self):
-        with open(self.config_file, "w") as dump_f:
-            json.dump(self.config, dump_f, indent=4)
+    def save(self, filename):
+        # assert osp.exists(self.config_json), "config json is not existed."
+        with open(filename, "w") as dump_f:
+            json.dump(self.config_json, dump_f, indent=4)
 
     def get_config(self):
         return self.config
@@ -80,8 +78,17 @@ class Config(object):
                                     len(self.config.environ.repo_name)]
         self.config.log.log_dir = osp.abspath(osp.join(self.config.log.root_dir, 'log', self.config.log.this_dir))
         self.config.log.log_dir_link = osp.join(self.config.log.abs_dir, 'log')
-        self.config.log.snapshot_dir = osp.abspath(osp.join(self.config.log.log_dir, "snapshot"))
 
+        snapshot_dir = osp.abspath(osp.join(self.config.log.log_dir, self.config.snapshot.name))
+
+        # a new training process, but not set a new snapshot name to record the new training process.
+        if osp.exists(snapshot_dir) and \
+            not osp.exists(self.config.model.continue_path):
+            snapshot_dir += '_new'
+
+        self.config.log.snapshot_dir = snapshot_dir
+
+        # log file
         exp_time = time.strftime('%Y_%m_%d_%H_%M_%S', time.localtime())
         self.config.log.log_file = self.config.log.log_dir + '/log_' + exp_time + '.log'
         self.config.log.link_log_file = self.config.log.log_file + '/log_last.log'

@@ -5,16 +5,17 @@
  @Email   : wangxin_buaa@163.com
  @File    : validator.py.py
 """
+import sys
 
 import torch
 import numpy as np
-import cv2
 
 from easydict import EasyDict as edict
 
 # from modules.datasets.seg.BaseDataset import BaseDataset
-from modules.datasets.seg.ade.ade20k import ADE
-from modules.utils.img_utils import pad_image_to_shape, normalize
+from tqdm import tqdm
+
+from modules.utils.img_utils import normalize
 from modules.utils.visualize import get_color_pallete
 from modules.metircs.seg.metric import SegMetric
 
@@ -45,15 +46,22 @@ class Validator(object):
         self.val_func = None
 
     def eval(self, model):
+        bar_format = '{desc}[{elapsed}<{remaining},{rate_fmt}]'
+        pbar = tqdm(range(self.ndata), file=sys.stdout,
+                    bar_format=bar_format)
+
         self.val_func = model
         self.val_func.eval()
         out_images = None
         sum_loss = 0.0
-        for idx in range(self.ndata):
+        for idx in pbar:
             data = self.dataset[idx]['data']
             label = self.dataset[idx]['label']
+
+            # print('#val:', data.shape, label.shape)
+
             loss, pred = self.val_func_process(data, label, self.device)
-            sum_loss += loss.item()
+            sum_loss += loss
             self.metric.update(pred, label)
 
             if idx in self.out_id:
@@ -64,20 +72,24 @@ class Validator(object):
                                                         self.dataset.get_class_colors(), self.config.data.background)])
                 out_images = tmp_imgs if out_images is None else np.hstack(out_images, tmp_imgs)
 
+            print_str = 'Validation {}/{}:'.format(idx + 1, self.ndata)
+            pbar.set_description(print_str, refresh=False)
+
         return sum_loss / self.dataset.get_length(), self.metric.get_scores(), out_images
 
     def val_func_process(self, data, label, device=None):
-        data = self.pre_process(data)
+        data, label = self.pre_process(data, label)
         data = torch.FloatTensor(data).cuda(device).unsqueeze(0)
         label = torch.LongTensor(label).cuda(device).unsqueeze(0)
 
         with torch.no_grad():
             loss, pred = self.val_func(data, label)
             pred = torch.exp(pred)  # the output of network is log_softmax,
+            pred = pred.argmax(1)
 
-        return pred.unsqueeze(0), loss.item()
+        return loss.item(), pred.squeeze(0).cpu().numpy()
 
-    def pre_process(self, img):
+    def pre_process(self, img, gt=None):
         p_img = img
 
         if img.shape[2] < 3:
@@ -88,4 +100,9 @@ class Validator(object):
 
         p_img = normalize(p_img, self.image_mean, self.image_std)
         p_img = p_img.transpose(2, 0, 1)
+
+        if gt is not None:
+            p_gt = gt - 1
+            return p_img, p_gt
+
         return p_img
