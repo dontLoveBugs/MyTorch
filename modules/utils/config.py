@@ -64,9 +64,9 @@ class Config(object):
         self.config.data.image_std = np.array(self.config.data.image_std)
 
         # eval stride_rate
-        if self.config.get('eval', 'stride_rate') is not None:
-            self.eval.stride_rate = \
-                parse_frac_str(self.config.get('eval', 'stride_rate'))
+        if self.config.get('eval').get('stride_rate') is not None:
+            self.config.eval.stride_rate = \
+                parse_frac_str(self.config.get('eval').get('stride_rate'))
 
     def save(self, filename):
         # assert osp.exists(self.config_json), "config json is not existed."
