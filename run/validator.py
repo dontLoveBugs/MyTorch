@@ -10,9 +10,9 @@ import sys
 import torch
 import numpy as np
 
+import torch.nn.functional as F
 from easydict import EasyDict as edict
 
-# from modules.datasets.seg.BaseDataset import BaseDataset
 from tqdm import tqdm
 
 from modules.utils.img_utils import normalize
@@ -57,11 +57,14 @@ class Validator(object):
         for idx in pbar:
             data = self.dataset[idx]['data']
             label = self.dataset[idx]['label']
+            label -= 1
 
             # print('#val:', data.shape, label.shape)
 
             loss, pred = self.val_func_process(data, label, self.device)
             sum_loss += loss
+
+            pred, label = self.post_process(pred, label)
             self.metric.update(pred, label)
 
             if idx in self.out_id:
@@ -102,7 +105,14 @@ class Validator(object):
         p_img = p_img.transpose(2, 0, 1)
 
         if gt is not None:
-            p_gt = gt - 1
+            # p_gt = gt - 1
+            p_gt = gt
             return p_img, p_gt
 
         return p_img
+
+    def post_process(self, pred, gt):
+        if pred.shape != gt.shape:
+            pred = F.interpolate(pred, size=gt.size()[-2:], mode='bilinear', align_corners=True)
+
+        return pred, gt

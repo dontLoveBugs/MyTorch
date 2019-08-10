@@ -17,13 +17,11 @@ from easydict import EasyDict as edict
 class SegMetric(object):
 
     def __init__(self, n_classes):
-        # assert isinstance(config, edict), "config is not easydict. pip install easydict"
-        # self.config = config
-        # self.n_classes = self.config.get('data', 'num_classes')
         self.n_classes = n_classes
         self.confusion_matrix = np.zeros((self.n_classes, self.n_classes))
 
     def _fast_hist(self, label_true, label_pred, n_class):
+        # 0<= class_value < n_class
         mask = (label_true >= 0) & (label_true < n_class)
         hist = np.bincount(
             n_class * label_true[mask].astype(int) +
@@ -32,6 +30,12 @@ class SegMetric(object):
         return hist
 
     def update(self, label_preds, label_trues):
+        """
+        :param label_preds: numpy.array  HXW
+        :param label_trues: numpy.array  HXW
+        :return:
+        """
+        assert label_preds.shape == label_trues.shape
         for lt, lp in zip(label_trues, label_preds):
             self.confusion_matrix += self._fast_hist(lt.flatten(), lp.flatten(), self.n_classes)
 

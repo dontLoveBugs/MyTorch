@@ -12,6 +12,8 @@ import numpy as np
 import time
 from easydict import EasyDict as edict
 
+from modules.utils.pyt_utils import parse_frac_str
+
 
 def _merge(src, dst):
     for k, v in src.items():
@@ -61,6 +63,11 @@ class Config(object):
         self.config.data.image_mean = np.array(self.config.data.image_mean)
         self.config.data.image_std = np.array(self.config.data.image_std)
 
+        # eval stride_rate
+        if self.config.get('eval', 'stride_rate') is not None:
+            self.eval.stride_rate = \
+                parse_frac_str(self.config.get('eval', 'stride_rate'))
+
     def save(self, filename):
         # assert osp.exists(self.config_json), "config json is not existed."
         with open(filename, "w") as dump_f:
@@ -71,6 +78,8 @@ class Config(object):
 
     def create_log(self):
         self.config.log = edict()
+
+        # snapshot dir setting
         self.config.log.abs_dir = osp.realpath(".")
         self.config.log.this_dir = self.config.log.abs_dir.split(osp.sep)[-1]
         self.config.log.root_dir = self.config.log.abs_dir[
@@ -83,7 +92,7 @@ class Config(object):
 
         # a new training process, but not set a new snapshot name to record the new training process.
         if osp.exists(snapshot_dir) and \
-            not osp.exists(self.config.model.continue_path):
+                not osp.exists(self.config.model.continue_path):
             snapshot_dir += '_new'
 
         self.config.log.snapshot_dir = snapshot_dir

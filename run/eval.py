@@ -33,10 +33,9 @@ class SegEvaluator(Evaluator):
 
         pred = self.sliding_eval(img, config.eval.crop_size,
                                  config.eval.stride_rate, device)
-        hist_tmp, labeled_tmp, correct_tmp = hist_info(config.data.num_classes,
-                                                       pred,
-                                                       label)
-        results_dict = {'hist': hist_tmp, 'labeled': labeled_tmp,
+        hist_tmp, labeled_tmp, correct_tmp = hist_info(config.data.num_classes, pred, label)
+        results_dict = {'hist': hist_tmp,
+                        'labeled': labeled_tmp,
                         'correct': correct_tmp}
 
         if self.save_path is not None:

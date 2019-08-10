@@ -4,6 +4,7 @@ import sys
 import time
 import argparse
 from collections import OrderedDict, defaultdict
+from fractions import Fraction
 
 import torch
 import torch.utils.model_zoo as model_zoo
@@ -20,6 +21,14 @@ model_urls = {
     'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
     'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
 }
+
+
+def parse_frac_str(frac_str):
+    """
+    :param frac_str: "1/3"
+    :return float: 0.3333333
+    """
+    return float(Fraction(frac_str))
 
 
 def reduce_tensor(tensor, dst=0, op=dist.ReduceOp.SUM, world_size=1):
