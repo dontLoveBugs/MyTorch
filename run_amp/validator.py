@@ -7,6 +7,7 @@
 """
 import sys
 
+import cv2
 import torch
 import numpy as np
 
@@ -80,8 +81,10 @@ class Validator(object):
                     new_height = out_images.shape[0]
                     # new_width = int(out_images.shape[1] / new_height * tmp_imgs.shape[1])
                     new_width = int(tmp_imgs.shape[1] / tmp_imgs.shape[0] * new_height)
-                    tmp_imgs.resize((new_height, new_width, 3))
-                    print(out_images.shape, tmp_imgs.shape)
+                    # tmp_imgs.resize((new_height, new_width, tmp_imgs.shape[2]))
+                    tmp_imgs = cv2.resize(tmp_imgs, (new_width, new_height),
+                                          interpolation=cv2.INTER_LINEAR)
+                    # print(out_images.shape, tmp_imgs.shape)
                     out_images = np.hstack([out_images, tmp_imgs])
 
             print_str = 'Validation {}/{}:'.format(idx + 1, self.ndata)

@@ -23,7 +23,7 @@
 
     "train" :
     {
-        "batch_size": 12,
+        "batch_size": 16,
         "lr": 0.01,
         "lr_power": 0.9,
         "momentum": 0.9,

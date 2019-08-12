@@ -49,7 +49,6 @@ with Engine(config=config) as engine:
 
     # data loader
     train_loader, train_sampler, niters_per_epoch = get_train_loader(engine, ADE)
-    niters_per_epoch = 100
 
     # config network and criterion
     criterion = nn.CrossEntropyLoss(reduction='mean',
