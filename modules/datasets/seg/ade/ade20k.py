@@ -63,6 +63,7 @@ class ADE(BaseDataset):
                 else:
                     print('cannot find the mask:', maskpath)
 
+        img_paths.sort(), mask_paths.sort()
         return img_paths, mask_paths
 
     @classmethod
@@ -171,7 +172,7 @@ if __name__ == '__main__':
     #     print(i, d['fn'], d['data'].shape, d['label'].shape)
 
     for i in range(ade_train.get_length()):
-        print(i, ade_train[i])
+        print(i, ade_train[i]['fn'])
 
     print(ade_train.get_class_colors())
 

@@ -1,0 +1,61 @@
+{
+    "environ" :
+    {
+        "seed": 304,
+        "repo_name": "MyTorch"
+    },
+
+    "model" :
+    {
+        "pretrained_model": "/data/wangxin/pretrained_models/resnet50_v1c.pth",
+        "continue_path": "",
+        "bn_momentum": 0.1,
+        "bn_eps": 1e-05,
+        "sync_bn": true,
+        "fix_bias": true,
+        "fix_bn": false
+    },
+
+    "amp":
+    {
+        "opt_level": "O1"
+    },
+
+    "train" :
+    {
+        "batch_size": 12,
+        "lr": 0.01,
+        "lr_power": 0.9,
+        "momentum": 0.9,
+        "weight_decay": 0.0001,
+        "nepochs": 120,
+        "num_workers": 24,
+        "scale_array": [0.5, 0.75, 1, 1.5, 1.75, 2]
+    },
+
+    "eval": {
+        "iter": 30,
+        "base_size": 480,
+        "crop_size": 480,
+        "stride_rate": "2/3",
+        "flip": false,
+        "scale_array": [1]
+    },
+
+    "data": {
+        "dataset_path": "/data/wangxin/ADEChallengeData2016",
+        "image_height": 480,
+        "image_width": 480,
+        "target_size": 480,
+        "num_classes": 150,
+        "background": -1,
+        "image_mean": [0.485, 0.456, 0.406],
+        "image_std": [0.229, 0.224, 0.225],
+        "is_test": false
+    },
+
+    "snapshot":
+    {
+        "name": "torchseg"
+    }
+}
