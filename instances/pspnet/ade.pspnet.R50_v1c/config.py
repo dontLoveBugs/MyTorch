@@ -9,9 +9,6 @@ import sys
 import time
 import numpy as np
 from easydict import EasyDict as edict
-import argparse
-
-import torch.utils.model_zoo as model_zoo
 
 C = edict()
 config = C
@@ -115,6 +112,6 @@ if __name__ == '__main__':
     # if args.tensorboard:
     #     open_tensorboard()
 
-    from modules.utils.config import Config
+    from modules.configs.seg.config import Config
     config = Config(config_file='./config.json').get_config()
     print(config)

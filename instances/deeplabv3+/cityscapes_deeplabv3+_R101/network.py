@@ -1,4 +1,12 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
+"""
+ @Time    : 2019/8/14 16:25
+ @Author  : Wang Xin
+ @Email   : wangxin_buaa@163.com
+ @File    : network.py
+"""
+
+
 from functools import partial
 from collections import OrderedDict
 
@@ -7,10 +15,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from modules.base_model import resnet50
-from modules.seg_opr.seg_oprs import ConvBnRelu
+from modules.ops.seg.seg_oprs import ConvBnRelu
 
 # 读取配置文件
-from modules.utils.config import Config
+from modules.configs.seg.config import Config
+
+torch.hub
 
 config = Config(config_file='./config.json').get_config()
 
@@ -117,8 +127,3 @@ class PyramidPooling(nn.Module):
 
         ppm_out = self.conv6(ppm_out)
         return ppm_out
-
-
-if __name__ == "__main__":
-    model = PSPNet(150, None)
-    print(model)

@@ -46,8 +46,9 @@ class Config(object):
     config: json ---> edict
     """
 
-    def __init__(self, config_file=None):
+    def __init__(self, config_file=None, train=True):
         assert os.path.exists(config_file), 'config file is not existed.'
+        self.train = train
         self.config_file = config_file
         self.load()
         self.create_log()
@@ -91,7 +92,7 @@ class Config(object):
         snapshot_dir = osp.abspath(osp.join(self.config.log.log_dir, self.config.snapshot.name))
 
         # a new training process, but not set a new snapshot name to record the new training process.
-        if osp.exists(snapshot_dir) and \
+        if self.train and osp.exists(snapshot_dir) and \
                 not osp.exists(self.config.model.continue_path):
             snapshot_dir += '_new'
 

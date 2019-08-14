@@ -7,10 +7,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from modules.base_model import resnet50
-from modules.seg_opr.seg_oprs import ConvBnRelu
+from modules.ops.seg.seg_oprs import ConvBnRelu
 
 # 读取配置文件
-from modules.utils.config import Config
+from modules.configs.seg.config import Config
 
 config = Config(config_file='./config.json').get_config()
 

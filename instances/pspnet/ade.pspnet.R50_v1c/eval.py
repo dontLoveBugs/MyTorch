@@ -11,11 +11,11 @@ import torch.multiprocessing as mp
 from config import config
 from network import PSPNet
 
-from modules.utils.pyt_utils import ensure_dir, link_file, load_model, parse_devices
+from modules.utils.pyt_utils import parse_devices
 from modules.utils.visualize import print_iou, show_img
-from modules.engine.evaluator import Evaluator
+from modules.engine.seg.evaluator import Evaluator
 from modules.engine.logger import get_logger
-from modules.seg_opr.metric import hist_info, compute_score
+from modules.ops.seg.metric import hist_info, compute_score
 from modules.datasets.ade import ADE
 
 

@@ -90,6 +90,8 @@ class Validator(object):
             print_str = 'Validation {}/{}:'.format(idx + 1, self.ndata)
             pbar.set_description(print_str, refresh=False)
 
+        # empty the eval cuda cache.
+        torch.cuda.empty_cache()
         return sum_loss / self.dataset.get_length(), self.metric.get_scores(), out_images
 
     def val_func_process(self, data, label, device=None):

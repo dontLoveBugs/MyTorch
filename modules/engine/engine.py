@@ -59,6 +59,7 @@ class Engine(object):
 
         if 'WORLD_SIZE' in os.environ:
             self.distributed = int(os.environ['WORLD_SIZE']) > 1 or torch.cuda.device_count() > 1
+        self.amp = False if self.config.get('amp') is None else True
 
         # set random seed
         torch.manual_seed(config.environ.seed)

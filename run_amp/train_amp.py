@@ -8,7 +8,7 @@ import sys
 
 sys.path.append("..")
 
-from modules.utils.config import Config
+from modules.configs.seg import Config
 
 from run_amp.data import get_train_loader
 from run_amp.network import PSPNet
@@ -91,7 +91,7 @@ with Engine(config=config) as engine:
 
     # Initialize Amp.  Amp accepts either values or strings for the optional override arguments,
     # for convenient interoperation with argparse.
-    if config.get('amp') is not None:
+    if engine.amp:
         engine.logger.info("Initialize Amp. opt level={}, keep batchnorm fp32={}, loss_scale={}.".
                            format(config.amp.opt_level,
                                   config.amp.get("keep_batchnorm_fp32"),
@@ -140,8 +140,11 @@ with Engine(config=config) as engine:
             # backward
             optimizer.zero_grad()
             # loss.backward()
-            with amp.scale_loss(loss, optimizer) as scaled_loss:
-                scaled_loss.backward()
+            if engine.amp:
+                with amp.scale_loss(loss, optimizer) as scaled_loss:
+                    scaled_loss.backward()
+            else:
+                loss.backward()
             optimizer.step()
 
             # reset learning rate
@@ -170,7 +173,7 @@ with Engine(config=config) as engine:
                                             config.log.log_dir,
                                             config.log.log_dir_link)
 
-        # visualization
+        # validation and visualization
         if engine.local_rank == 0:
             val_loss, result, out_imgs = validator.eval(model.module)
             engine.tb_logger.add_scalars_list('TrainVal', [{'train': loss_meter.avg, 'val': val_loss}], epoch)

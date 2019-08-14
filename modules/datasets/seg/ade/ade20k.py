@@ -51,7 +51,10 @@ class ADE(BaseDataset):
         else:
             img_folder = osp.join(self.root, 'images/validation')
             mask_folder = osp.join(self.root, 'annotations/validation')
-        for filename in os.listdir(img_folder):
+
+        file_list = os.listdir(img_folder)
+        file_list.sort()
+        for filename in file_list:
             basename, _ = osp.splitext(filename)
             if filename.endswith(".jpg"):
                 imgpath = osp.join(img_folder, filename)
@@ -63,7 +66,7 @@ class ADE(BaseDataset):
                 else:
                     print('cannot find the mask:', maskpath)
 
-        img_paths.sort(), mask_paths.sort()
+        # img_paths.sort(), mask_paths.sort()
         return img_paths, mask_paths
 
     @classmethod
@@ -171,9 +174,12 @@ if __name__ == '__main__':
     # for i, d in enumerate(d_val):
     #     print(i, d['fn'], d['data'].shape, d['label'].shape)
 
-    for i in range(ade_train.get_length()):
-        print(i, ade_train[i]['fn'])
+    # for i in range(ade_train.get_length()):
+    #     print(i, ade_train[i]['fn'])
 
-    print(ade_train.get_class_colors())
+    # print(ade_train.get_class_colors())
+
+    print(ade_train.get_length())
+    print(ade_val.get_length())
 
 

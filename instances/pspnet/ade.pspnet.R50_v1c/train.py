@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 
-from modules.utils.config import Config
+from modules.configs.seg.config import Config
 
 from .dataloader import get_train_loader
 from .network import PSPNet
