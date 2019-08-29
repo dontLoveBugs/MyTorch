@@ -20,7 +20,7 @@ class TrainPre(object):
 
         img = normalize(img, self.config.image_mean, self.config.image_std)
 
-        crop_size = (self.config.image_height, self.config.image_width)
+        crop_size = (self.config.crop_h, self.config.crop_w)
         crop_pos = generate_random_crop_pos(img.shape[:2], crop_size)
 
         p_img, _ = random_crop_pad_to_shape(img, crop_pos, crop_size, 0)

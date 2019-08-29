@@ -55,10 +55,14 @@ class Evaluator(object):
 
             models = os.listdir(model_path)
             models.remove("epoch-last.pth")
+            models.remove("tensorboard")
+            models.remove('imgs')
+            models.remove("config.json")
             sorted_models = [None] * len(models)
             model_idx = [0] * len(models)
 
             for idx, m in enumerate(models):
+                print(m)
                 num = m.split(".")[0].split("-")[1]
                 model_idx[idx] = num
                 sorted_models[idx] = m

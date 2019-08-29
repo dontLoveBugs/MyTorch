@@ -8,8 +8,8 @@ import numpy as np
 import torch
 import torch.multiprocessing as mp
 
-from modules.configs.seg.config import Config
-from run_amp.network import PSPNet
+from modules.engine.seg.config import Config
+from run.network import PSPNet
 
 from modules.utils.pyt_utils import parse_devices
 from modules.utils.visualize import print_iou, show_img

@@ -28,14 +28,13 @@
         "lr_power": 0.9,
         "momentum": 0.9,
         "weight_decay": 0.0001,
-        "nepochs": 120,
+        "nepochs": 80,
         "num_workers": 24,
         "scale_array": [0.5, 0.75, 1, 1.5, 1.75, 2]
     },
 
     "eval": {
         "iter": 30,
-        "base_size": 480,
         "crop_size": 480,
         "stride_rate": "2/3",
         "flip": false,
@@ -44,9 +43,8 @@
 
     "data": {
         "dataset_path": "/data/wangxin/ADEChallengeData2016",
-        "image_height": 480,
-        "image_width": 480,
-        "target_size": 480,
+        "crop_h": 480,
+        "crop_w": 480,
         "num_classes": 150,
         "background": -1,
         "image_mean": [0.485, 0.456, 0.406],

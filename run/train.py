@@ -8,11 +8,11 @@ import sys
 
 sys.path.append("..")
 
-from modules.configs.seg import Config
+from modules.engine.seg import Config
 
-from run_amp.data import get_train_loader
-from run_amp.network import PSPNet
-from run_amp.validator import Validator
+from run.data import get_train_loader
+from run.network import PSPNet
+from run.validator import Validator
 
 from modules.datasets.seg.ade import ADE
 from modules.utils.init_func import init_weight, group_weight
@@ -49,10 +49,11 @@ with Engine(config=config) as engine:
 
     # data loader
     train_loader, train_sampler, niters_per_epoch = get_train_loader(engine, ADE)
+    # niters_per_epoch = config.train.niters_per_epoch
 
     # config network and criterion
-    criterion = nn.CrossEntropyLoss(reduction='mean',
-                                    ignore_index=-1)
+    # criterion = nn.CrossEntropyLoss(reduction='mean', ignore_index=-1)
+    criterion = nn.NLLLoss(ignore_index=-1)
 
     if engine.distributed:
         engine.logger.info('Use the Multi-Process-SyncBatchNorm')
@@ -68,7 +69,6 @@ with Engine(config=config) as engine:
                 mode='fan_in', nonlinearity='relu')
 
     # group weight and config optimizer
-    # Scale learning rate based on global batch size
     base_lr = config.train.lr
 
     params_list = []

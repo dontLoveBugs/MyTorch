@@ -18,7 +18,7 @@ from modules.base_model import resnet50
 from modules.ops.seg.seg_oprs import ConvBnRelu
 
 # 读取配置文件
-from modules.configs.seg.config import Config
+from modules.engine.seg.config import Config
 
 torch.hub
 

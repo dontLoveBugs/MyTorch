@@ -3,7 +3,7 @@
 # @Time    : 2018/8/1 上午1:50
 # @Author  : yuchangqian
 # @Contact : changqian_yu@163.com
-# @File    : lr_policy.py.py
+# @File    : lr_policy.py
 
 from abc import ABCMeta, abstractmethod
 

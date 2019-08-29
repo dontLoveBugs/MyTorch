@@ -112,6 +112,6 @@ if __name__ == '__main__':
     # if args.tensorboard:
     #     open_tensorboard()
 
-    from modules.configs.seg.config import Config
+    from modules.engine.seg.config import Config
     config = Config(config_file='./config.json').get_config()
     print(config)

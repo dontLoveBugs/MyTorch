@@ -10,7 +10,7 @@ from modules.base_model import resnet50
 from modules.ops.seg.seg_oprs import ConvBnRelu
 
 # 读取配置文件
-from modules.configs.seg.config import Config
+from modules.engine.seg.config import Config
 
 config = Config(config_file='./config.json').get_config()
 
@@ -52,6 +52,7 @@ class PSPNet(nn.Module):
                                align_corners=True)
         aux_fm = F.interpolate(aux_fm, size=(h, w), mode='bilinear',
                                align_corners=True)
+
         psp_fm = F.log_softmax(psp_fm, dim=1)
         aux_fm = F.log_softmax(aux_fm, dim=1)
 
