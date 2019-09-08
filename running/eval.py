@@ -9,7 +9,7 @@ import torch
 import torch.multiprocessing as mp
 
 from modules.engine.seg.config import Config
-from run.network import PSPNet
+from running.network import PSPNet
 
 from modules.utils.pyt_utils import parse_devices
 from modules.utils.visualize import print_iou, show_img
@@ -66,10 +66,8 @@ class SegEvaluator(Evaluator):
             labeled += d['labeled']
             count += 1
 
-        iu, mean_IU, _, mean_pixel_acc = compute_score(hist, correct,
-                                                       labeled)
-        result_line = print_iou(iu, mean_pixel_acc,
-                                dataset.get_class_names(), True)
+        iu, mean_IU, _, mean_pixel_acc = compute_score(hist, correct, labeled)
+        result_line = print_iou(iu, mean_pixel_acc, dataset.get_class_names(), True)
         return result_line
 
 
@@ -96,5 +94,4 @@ if __name__ == "__main__":
                                  config.eval.scale_array, config.eval.flip,
                                  all_dev, args.verbose, args.save_path,
                                  args.show_image)
-        segmentor.run(config.log.snapshot_dir, args.epochs, config.log.val_log_file,
-                      config.log.link_val_log_file)
+        segmentor.run(config.log.snapshot_dir, args.epochs, config.log.val_log_file)

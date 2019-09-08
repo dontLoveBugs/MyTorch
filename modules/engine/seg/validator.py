@@ -8,13 +8,11 @@
 
 import torch
 import numpy as np
-import cv2
 
 from easydict import EasyDict as edict
 
-# from modules.datasets.seg.BaseDataset import BaseDataset
-from modules.datasets.seg.ade.ade20k import ADE
-from modules.utils.img_utils import pad_image_to_shape, normalize
+
+from modules.utils.img_utils import normalize
 from modules.utils.visualize import get_color_pallete
 from modules.metircs.seg.metric import SegMetric
 

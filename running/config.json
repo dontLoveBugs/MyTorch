@@ -9,6 +9,7 @@
     {
         "pretrained_model": "/data/wangxin/pretrained_models/resnet50_v1c.pth",
         "continue_path": "",
+        "deep_stem": true,
         "bn_momentum": 0.1,
         "bn_eps": 1e-05,
         "sync_bn": true,
@@ -54,6 +55,7 @@
 
     "snapshot":
     {
-        "name": "torchseg"
+        "name": "torchseg",
+        "root": "/data/snapshots"
     }
 }

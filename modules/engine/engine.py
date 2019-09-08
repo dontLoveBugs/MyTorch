@@ -121,10 +121,10 @@ class Engine(object):
             "Time usage:\n\tprepare snapshot: {}, IO: {}".format(
                 path, t_iobegin - t_start, t_end - t_iobegin))
 
-    def save_and_link_checkpoint(self, snapshot_dir, log_dir, log_dir_link):
+    def save_and_link_checkpoint(self, snapshot_dir):
         ensure_dir(snapshot_dir)
-        if not osp.exists(log_dir_link):
-            link_file(log_dir, log_dir_link)
+        # if not osp.exists(log_dir_link):
+        #     link_file(log_dir, log_dir_link)
         current_epoch_checkpoint = osp.join(snapshot_dir, 'epoch-{}.pth'.format(
             self.state.epoch))
         self.save_checkpoint(current_epoch_checkpoint)

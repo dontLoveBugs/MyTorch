@@ -22,7 +22,7 @@ class PSPNet(nn.Module):
         self.backbone = resnet50(pretrained_model, norm_layer=norm_layer,
                                  bn_eps=config.model.bn_eps,
                                  bn_momentum=config.model.bn_momentum,
-                                 deep_stem=True, stem_width=64)
+                                 deep_stem=config.model.deep_stem, stem_width=64)
         self.backbone.layer3.apply(partial(self._nostride_dilate, dilate=2))
         self.backbone.layer4.apply(partial(self._nostride_dilate, dilate=4))
 
@@ -57,15 +57,11 @@ class PSPNet(nn.Module):
         aux_fm = F.log_softmax(aux_fm, dim=1)
 
         if label is not None:
-            # TODO: using loss warpper
             loss = self.criterion(psp_fm, label)
             aux_loss = self.criterion(aux_fm, label)
             loss = loss + 0.4 * aux_loss
 
-            if self.training:
-                return loss
-            else:
-                return loss, psp_fm
+            return loss if self.training else (loss, psp_fm)
 
         return psp_fm
 

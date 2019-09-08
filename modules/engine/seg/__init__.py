@@ -7,6 +7,6 @@
 """
 
 
+from .config import Config
 from .evaluator import Evaluator
 from .validator import Validator
-from .config import Config

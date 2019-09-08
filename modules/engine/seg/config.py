@@ -12,7 +12,7 @@ import numpy as np
 import time
 from easydict import EasyDict as edict
 
-from modules.utils.pyt_utils import parse_frac_str
+from modules.utils.pyt_utils import parse_frac_str, ensure_dir
 
 
 def _merge(src, dst):
@@ -79,31 +79,34 @@ class Config(object):
 
     def create_log(self):
         self.config.log = edict()
+        exp_time = time.strftime('%Y_%m_%d_%H_%M_%S', time.localtime())
 
         # snapshot dir setting
-        self.config.log.abs_dir = osp.realpath(".")
-        self.config.log.this_dir = self.config.log.abs_dir.split(osp.sep)[-1]
-        self.config.log.root_dir = self.config.log.abs_dir[
-                                   :self.config.log.abs_dir.index(self.config.environ.repo_name) +
-                                    len(self.config.environ.repo_name)]
-        self.config.log.log_dir = osp.abspath(osp.join(self.config.log.root_dir, 'log', self.config.log.this_dir))
-        self.config.log.log_dir_link = osp.join(self.config.log.abs_dir, 'log')
+        # self.config.log.abs_dir = osp.realpath(".")
+        # self.config.log.this_dir = self.config.log.abs_dir.split(osp.sep)[-1]
+        # self.config.log.root_dir = self.config.log.abs_dir[
+        #                            :self.config.log.abs_dir.index(self.config.environ.repo_name) +
+        #                             len(self.config.environ.repo_name)]
+        # self.config.log.log_dir = osp.abspath(osp.join(self.config.log.root_dir, 'log', self.config.log.this_dir))
+        # self.config.log.log_dir_link = osp.join(self.config.log.abs_dir, 'log')
 
+        self.config.log.log_dir = osp.join(self.config.snapshot.root, self.config.environ.repo_name)
+        ensure_dir(self.config.log.log_dir)
         snapshot_dir = osp.abspath(osp.join(self.config.log.log_dir, self.config.snapshot.name))
 
         # a new training process, but not set a new snapshot name to record the new training process.
         if self.train and osp.exists(snapshot_dir) and \
                 not osp.exists(self.config.model.continue_path):
-            snapshot_dir += '_new'
+            snapshot_dir += '_new_' + exp_time
 
         self.config.log.snapshot_dir = snapshot_dir
 
         # log file
-        exp_time = time.strftime('%Y_%m_%d_%H_%M_%S', time.localtime())
         self.config.log.log_file = self.config.log.log_dir + '/log_' + exp_time + '.log'
-        self.config.log.link_log_file = self.config.log.log_file + '/log_last.log'
-        self.config.log.val_log_file = self.config.log.log_dir + '/val_' + exp_time + '.log'
-        self.config.log.link_val_log_file = self.config.log.log_dir + '/val_last.log'
+        # self.config.log.link_log_file = self.config.log.log_file + '/log_last.log'
+        self.config.log.val_log_file = self.config.log.log_dir + '/val_' + self.config.snapshot.name \
+                                       + '_' + exp_time + '.log'
+        # self.config.log.link_val_log_file = self.config.log.log_dir + '/val_last.log'
 
     def __str__(self):
         str = ''

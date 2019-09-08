@@ -10,9 +10,9 @@ sys.path.append("..")
 
 from modules.engine.seg import Config
 
-from run.data import get_train_loader
-from run.network import PSPNet
-from run.validator import Validator
+from running.data import get_train_loader
+from running.network import PSPNet
+from running.validator import Validator
 
 from modules.datasets.seg.ade import ADE
 from modules.utils.init_func import init_weight, group_weight
@@ -49,10 +49,8 @@ with Engine(config=config) as engine:
 
     # data loader
     train_loader, train_sampler, niters_per_epoch = get_train_loader(engine, ADE)
-    # niters_per_epoch = config.train.niters_per_epoch
 
     # config network and criterion
-    # criterion = nn.CrossEntropyLoss(reduction='mean', ignore_index=-1)
     criterion = nn.NLLLoss(ignore_index=-1)
 
     if engine.distributed:
@@ -165,19 +163,17 @@ with Engine(config=config) as engine:
             pbar.set_description(print_str, refresh=False)
 
         if engine.distributed and (engine.local_rank == 0):
-            engine.save_and_link_checkpoint(config.log.snapshot_dir,
-                                            config.log.log_dir,
-                                            config.log.log_dir_link)
+            engine.save_and_link_checkpoint(config.log.snapshot_dir)
         elif not engine.distributed:
-            engine.save_and_link_checkpoint(config.log.log.snapshot_dir,
-                                            config.log.log_dir,
-                                            config.log.log_dir_link)
+            engine.save_and_link_checkpoint(config.log.log.snapshot_dir)
 
         # validation and visualization
         if engine.local_rank == 0:
             val_loss, result, out_imgs = validator.eval(model.module)
-            engine.tb_logger.add_scalars_list('TrainVal', [{'train': loss_meter.avg, 'val': val_loss}], epoch)
-            engine.tb_logger.add_scalar_dicts('Train', result, epoch)
+            engine.tb_logger.add_scalar_dict_list('TrainVal',
+                                                  [{'train': loss_meter.avg, 'val': val_loss}],
+                                                  epoch)
+            engine.tb_logger.add_scalar_dict('Train', result, epoch)
             loss_meter.reset()
 
             engine.save_images(config.log.snapshot_dir,

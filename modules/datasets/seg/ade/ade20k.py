@@ -53,7 +53,7 @@ class ADE(BaseDataset):
             mask_folder = osp.join(self.root, 'annotations/validation')
 
         file_list = os.listdir(img_folder)
-        file_list.sort()
+        file_list.sort()  # sort to order
         for filename in file_list:
             basename, _ = osp.splitext(filename)
             if filename.endswith(".jpg"):
@@ -66,7 +66,6 @@ class ADE(BaseDataset):
                 else:
                     print('cannot find the mask:', maskpath)
 
-        # img_paths.sort(), mask_paths.sort()
         return img_paths, mask_paths
 
     @classmethod

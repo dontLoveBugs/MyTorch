@@ -10,7 +10,7 @@ import torch.nn.functional as F
 import torch.multiprocessing as mp
 
 from modules.engine.logger import get_logger
-from modules.utils.pyt_utils import load_model, link_file, ensure_dir
+from modules.utils.pyt_utils import load_model, ensure_dir
 from modules.utils.img_utils import pad_image_to_shape, normalize
 
 logger = get_logger()
@@ -40,7 +40,7 @@ class Evaluator(object):
             ensure_dir(save_path)
         self.show_image = show_image
 
-    def run(self, model_path, model_indice, log_file, log_file_link):
+    def run(self, model_path, model_indice, log_file):
         """There are four evaluation modes:
             1.only eval a .pth model: -e *.pth
             2.only eval a certain epoch: -e epoch
@@ -83,7 +83,7 @@ class Evaluator(object):
                                    'epoch-%s.pth' % model_indice), ]
 
         results = open(log_file, 'a')
-        link_file(log_file, log_file_link)
+        # link_file(log_file, log_file_link)
 
         for model in models:
             logger.info("Load Model: %s" % model)

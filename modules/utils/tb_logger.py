@@ -35,20 +35,20 @@ class Logger(object):
         super(Logger, self).__init__()
         self.logger = create_logger(logdir)
 
-    def add_scalar_dicts(self, tag, scalar_dicts, it):
+    def add_scalar_dict(self, tag, scalar_dict, it):
         """
         :param tag: str, train, eval or test.
-        :param scalar_dicts:
+        :param scalar_dict:
                 type: dict
                 {'scalar name', scalar value, ...}
         :param it: global step
         """
 
-        assert isinstance(scalar_dicts, dict), 'scalar dict must be dict type.'
-        for k, v in scalar_dicts.items():
+        assert isinstance(scalar_dict, dict), 'scalar dict must be dict type.'
+        for k, v in scalar_dict.items():
             self.logger.add_scalar(tag + '/' + k, v, it)
 
-    def add_scalars_list(self, tag, scalars_list, it):
+    def add_scalar_dict_list(self, tag, scalar_dict_list, it):
         """
         :param tag: str, it generally is 'trainval'
         :param scalars_list:
@@ -57,8 +57,8 @@ class Logger(object):
         :param it: global step
         """
 
-        assert isinstance(scalars_list, list), 'scalars list must be list type.'
-        for k, v in enumerate(scalars_list):
+        assert isinstance(scalar_dict_list, list), 'scalars list must be list type.'
+        for k, v in enumerate(scalar_dict_list):
             self.logger.add_scalars(tag, v, it)
 
     def close(self):
