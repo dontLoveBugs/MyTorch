@@ -2,6 +2,7 @@
     "environ" :
     {
         "seed": 304,
+        "deterministic": true,
         "repo_name": "MyTorch"
     },
 

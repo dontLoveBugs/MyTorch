@@ -61,16 +61,22 @@ class Engine(object):
             self.distributed = int(os.environ['WORLD_SIZE']) > 1 or torch.cuda.device_count() > 1
         self.amp = False if self.config.get('amp') is None else True
 
+        if self.config.environ.deterministic:
+            cudnn.benchmark = False
+            cudnn.deterministic = True
+            torch.set_printoptions(precision=10)
+        else:
+            cudnn.benchmark = True
+
+        if self.amp:
+            assert torch.backends.cudnn.enabled, "Amp requires cudnn backend to be enabled."
+
         # set random seed
         torch.manual_seed(config.environ.seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed(config.environ.seed)
         np.random.seed(config.environ.seed)
         random.seed(config.environ.seed)
-
-        # cudnn.benchmark = True
-        cudnn.deterministic = True
-        assert torch.backends.cudnn.enabled, "Amp requires cudnn backend to be enabled."
 
         if self.distributed:
             self.world_size = int(os.environ['WORLD_SIZE'])
