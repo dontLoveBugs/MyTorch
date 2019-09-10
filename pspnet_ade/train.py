@@ -10,9 +10,9 @@ sys.path.append("..")
 
 from modules.engine.seg import Config
 
-from running.data import get_train_loader
-from running.network import PSPNet
-from running.validator import Validator
+from pspnet_ade.data import get_train_loader
+from pspnet_ade.network import PSPNet
+from pspnet_ade.validator import Validator
 
 from modules.datasets.seg.ade import ADE
 from modules.utils.init_func import init_weight, group_weight
@@ -23,10 +23,13 @@ from modules.engine.engine import Engine
 
 try:
     from apex import amp
-    from apex.parallel import SyncBatchNorm, DistributedDataParallel
+    # from apex.parallel import SyncBatchNorm, DistributedDataParallel
 except ImportError:
     raise ImportError(
         "Please install apex from https://www.github.com/nvidia/apex .")
+
+from torch.nn.parallel import DistributedDataParallel
+from torch.nn import SyncBatchNorm
 
 """
 Usage: python -m torch.distributed.launch --nproc_per_node=$NGPUS train.py

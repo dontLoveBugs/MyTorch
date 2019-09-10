@@ -9,14 +9,14 @@ import torch
 import torch.multiprocessing as mp
 
 from modules.engine.seg.config import Config
-from running.network import PSPNet
+from pspnet_cityscapes.network import PSPNet
 
 from modules.utils.pyt_utils import parse_devices
 from modules.utils.visualize import print_iou, show_img
 from modules.engine.seg import Evaluator
 from modules.engine.logger import get_logger
 from modules.ops.seg.metric import hist_info, compute_score
-from modules.datasets.seg.ade import ADE
+from modules.datasets.seg.cityscapes import CityScapes
 
 
 logger = get_logger()
@@ -29,7 +29,7 @@ class SegEvaluator(Evaluator):
         img = data['data']
         label = data['label']
         name = data['fn']
-        label = label - 1
+        label = label
 
         pred = self.sliding_eval(img, config.eval.crop_size,
                                  config.eval.stride_rate, device)
@@ -74,7 +74,7 @@ class SegEvaluator(Evaluator):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--epochs', default='last', type=str)
-    parser.add_argument('-d', '--devices', default='1', type=str)
+    parser.add_argument('-d', '--devices', default='0, 1, 2, 3', type=str)
     parser.add_argument('-v', '--verbose', default=False, action='store_true')
     parser.add_argument('--show_image', '-s', default=False,
                         action='store_true')
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     mp_ctx = mp.get_context('spawn')
     network = PSPNet(config.data.num_classes, criterion=None)
-    dataset = ADE(config.data.dataset_path, 'val', None)
+    dataset = CityScapes(config.data.dataset_path, 'val', None)
 
     with torch.no_grad():
         segmentor = SegEvaluator(dataset, config.data.num_classes,

@@ -4,7 +4,7 @@ import scipy.io as sio
 
 
 def set_img_color(colors, background, img, gt, show255=False):
-    for i in range(1, len(colors)):
+    for i in range(0, len(colors)):
         if i != background:
             img[np.where(gt == i)] = colors[i]
     if show255:

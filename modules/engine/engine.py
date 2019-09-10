@@ -180,7 +180,7 @@ class Engine(object):
         if type is not None:
             self.logger.warning(
                 "A exception occurred during Engine initialization, "
-                "give up running process")
+                "give up pspnet_ade process")
             return False
 
         if self.local_rank == 0:

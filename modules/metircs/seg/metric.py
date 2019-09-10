@@ -7,7 +7,7 @@
 """
 
 # Original Author: Donny You(youansheng@gmail.com)
-# Segmentation running score.
+# Segmentation pspnet_ade score.
 
 
 import numpy as np
