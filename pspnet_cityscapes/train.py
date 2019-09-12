@@ -49,6 +49,7 @@ with Engine(config=config) as engine:
         val_set = CityScapes(config.data.dataset_path, split='val')
         validator = Validator(dataset=val_set,
                               device=engine.local_rank,
+                              ignore_index=255,
                               config=config, out_id=[1])
 
     # data loader
@@ -175,7 +176,7 @@ with Engine(config=config) as engine:
 
         # validation and visualization
         if engine.local_rank == 0:
-            val_loss, result, out_imgs = validator.eval(model.module)
+            val_loss, result, out_imgs = validator.run(model.module)
             engine.tb_logger.add_scalar_dict_list('TrainVal',
                                                   [{'train': loss_meter.avg, 'val': val_loss}],
                                                   epoch)
@@ -189,3 +190,4 @@ with Engine(config=config) as engine:
                                + ', mean iou:%.2f' % result.mean_iu)
 
         model.train()
+        torch.cuda.synchronize()

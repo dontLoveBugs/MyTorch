@@ -6,4 +6,5 @@
  @File    : __init__.py.py
 """
 
-from . import metric
+from .metric import SegMetric
+from .metric import hist_info, compute_score

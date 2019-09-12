@@ -173,17 +173,18 @@ class Evaluator(object):
     # slide the window to evaluate the image
     def sliding_eval(self, img, crop_size, stride_rate, device=None):
         ori_rows, ori_cols, c = img.shape
-        processed_pred = np.zeros((ori_rows, ori_cols, self.class_num))
+        scale_pred = np.zeros((ori_rows, ori_cols, self.class_num))
 
         for s in self.multi_scales:
             img_scale = cv2.resize(img, None, fx=s, fy=s,
                                    interpolation=cv2.INTER_LINEAR)
             new_rows, new_cols, _ = img_scale.shape
-            processed_pred += self.scale_process(img_scale,
+            scale_pred += self.scale_process(img_scale,
                                                  (ori_rows, ori_cols),
                                                  crop_size, stride_rate, device)
 
-        pred = processed_pred.argmax(2)
+        scale_pred /= len(self.multi_scales)
+        pred = scale_pred.argmax(2)
 
         return pred
 
@@ -206,6 +207,7 @@ class Evaluator(object):
             pad_cols = img_pad.shape[1]
             r_grid = int(np.ceil((pad_rows - crop_size) / stride)) + 1
             c_grid = int(np.ceil((pad_cols - crop_size) / stride)) + 1
+
             data_scale = torch.zeros(self.class_num, pad_rows, pad_cols).cuda(
                 device)
             count_scale = torch.zeros(self.class_num, pad_rows, pad_cols).cuda(
@@ -228,8 +230,8 @@ class Evaluator(object):
                                  tmargin[0]:(temp_score.shape[1] - tmargin[1]),
                                  tmargin[2]:(temp_score.shape[2] - tmargin[3])]
                     data_scale[:, s_y: e_y, s_x: e_x] += temp_score
-            # score = data_scale / count_scale
-            score = data_scale
+            score = data_scale / count_scale
+            # score = data_scale
             score = score[:, margin[0]:(score.shape[1] - margin[1]),
                     margin[2]:(score.shape[2] - margin[3])]
 
@@ -256,7 +258,7 @@ class Evaluator(object):
                     input_data = input_data.flip(-1)
                     score_flip = self.val_func(input_data)
                     score_flip = score_flip[0]
-                    score += score_flip.flip(-1)
+                    score = 0.5 * (score + score_flip.flip(-1))
                 score = torch.exp(score)
                 # score = score.data
 

@@ -32,7 +32,7 @@ class SegEvaluator(Evaluator):
         img = data['data']
         label = data['label']
         name = data['fn']
-        label = label - 1
+        # label = label - 1
 
         pred = self.sliding_eval(img, config.eval.crop_size,
                                  config.eval.stride_rate, device)

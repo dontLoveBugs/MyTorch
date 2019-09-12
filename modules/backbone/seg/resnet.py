@@ -1,9 +1,20 @@
-import functools
-import torch.nn as nn
-from modules.utils.pyt_utils import load_model
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+"""
+@Time    : 2019-09-12 15:25
+@Author  : Wang Xin
+@Email   : wangxin_buaa@163.com
+@File    : resnet.py
+"""
 
+
+import torch
+import torch.nn as nn
+
+from modules.utils.pyt_utils import load_model, load_url
 
 __all__ = ['ResNet', 'resnet18', 'resnet50', 'resnet101']
+
 
 model_urls = {
     'resnet18': 'http://sceneparsing.csail.mit.edu/model/pretrained_resnet/resnet18-imagenet.pth',
@@ -108,39 +119,19 @@ class Bottleneck(nn.Module):
 class ResNet(nn.Module):
 
     def __init__(self, block, layers, norm_layer=nn.BatchNorm2d, bn_eps=1e-5,
-                 bn_momentum=0.1, deep_stem=True, stem_width=32, inplace=True):
+                 bn_momentum=0.1, deep_stem=False, stem_width=32, inplace=True):
         self.inplanes = stem_width * 2 if deep_stem else 64
         super(ResNet, self).__init__()
-        self.deep_stem = deep_stem
-        if deep_stem:
-            # self.conv1 = nn.Sequential(
-            #     nn.Conv2d(3, stem_width, kernel_size=3, stride=2, padding=1,
-            #               bias=False),
-            #     norm_layer(stem_width, eps=bn_eps, momentum=bn_momentum),
-            #     nn.ReLU(inplace=inplace),
-            #     nn.Conv2d(stem_width, stem_width, kernel_size=3, stride=1,
-            #               padding=1,
-            #               bias=False),
-            #     norm_layer(stem_width, eps=bn_eps, momentum=bn_momentum),
-            #     nn.ReLU(inplace=inplace),
-            #     nn.Conv2d(stem_width, stem_width * 2, kernel_size=3, stride=1,
-            #               padding=1,
-            #               bias=False),
-            # )
-            self.conv1 = conv3x3(3, stem_width, stride=2)
-            self.bn1 = norm_layer(stem_width, eps=bn_eps, momentum=bn_momentum)
-            self.relu1 = nn.ReLU(inplace=inplace)
-            self.conv2 = conv3x3(stem_width, stem_width)
-            self.bn2 = norm_layer(stem_width, eps=bn_eps, momentum=bn_momentum)
-            self.relu2 = nn.ReLU(inplace=inplace)
-            self.conv3 = conv3x3(stem_width, stem_width * 2)
-            self.bn3 = norm_layer(stem_width * 2, eps=bn_eps, momentum=bn_momentum)
-            self.relu3 = nn.ReLU(inplace=inplace)
-        else:
-            self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
-                                   bias=False)
-            self.bn1 = norm_layer(64, eps=bn_eps, momentum=bn_momentum)
-            self.relu1 = nn.ReLU(inplace=inplace)
+
+        self.conv1 = conv3x3(3, stem_width, stride=2)
+        self.bn1 = norm_layer(stem_width, eps=bn_eps, momentum=bn_momentum)
+        self.relu1 = nn.ReLU(inplace=inplace)
+        self.conv2 = conv3x3(stem_width, stem_width)
+        self.bn2 = norm_layer(stem_width, eps=bn_eps, momentum=bn_momentum)
+        self.relu2 = nn.ReLU(inplace=inplace)
+        self.conv3 = conv3x3(stem_width, stem_width * 2)
+        self.bn3 = norm_layer(stem_width * 2, eps=bn_eps, momentum=bn_momentum)
+        self.relu3 = nn.ReLU(inplace=inplace)
 
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, norm_layer, 64, layers[0],
@@ -179,25 +170,20 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        if self.deep_stem:
-            x = self.relu1(self.bn1(self.conv1(x)))
-            x = self.relu2(self.bn2(self.conv2(x)))
-            x = self.relu3(self.bn3(self.conv3(x)))
-        else:
-            x = self.conv1(x)
-            x = self.bn1(x)
-            x = self.relu1(x)
+        x = self.relu1(self.bn1(self.conv1(x)))
+        x = self.relu2(self.bn2(self.conv2(x)))
+        x = self.relu3(self.bn3(self.conv3(x)))
 
         x = self.maxpool(x)
 
         blocks = []
-        x = self.layer1(x)
+        x = self.layer1(x);
         blocks.append(x)
-        x = self.layer2(x)
+        x = self.layer2(x);
         blocks.append(x)
-        x = self.layer3(x)
+        x = self.layer3(x);
         blocks.append(x)
-        x = self.layer4(x)
+        x = self.layer4(x);
         blocks.append(x)
 
         return blocks
@@ -208,6 +194,7 @@ def resnet18(pretrained_model=None, **kwargs):
 
     if pretrained_model is not None:
         model = load_model(model, pretrained_model)
+        # model.load_state_dict(load_url(model_urls['resnet18']), strict=False)
     return model
 
 
@@ -216,6 +203,7 @@ def resnet50(pretrained_model=None, **kwargs):
 
     if pretrained_model is not None:
         model = load_model(model, pretrained_model)
+        # model.load_state_dict(load_url(model_urls['resnet50'], map_location=torch.device('cpu')), strict=False)
     return model
 
 
@@ -224,4 +212,5 @@ def resnet101(pretrained_model=None, **kwargs):
 
     if pretrained_model is not None:
         model = load_model(model, pretrained_model)
+        # model.load_state_dict(load_url(model_urls['resnet101']), strict=False)
     return model

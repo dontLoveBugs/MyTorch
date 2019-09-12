@@ -16,13 +16,13 @@ from easydict import EasyDict as edict
 
 from tqdm import tqdm
 
-from modules.utils.img_utils import normalize
+from modules.utils.img_utils import normalize, pad_image_to_shape
 from modules.utils.visualize import get_color_pallete
 from modules.metircs.seg.metric import SegMetric
 
 
 class Validator(object):
-    def __init__(self, dataset, config, device, out_id=[1]):
+    def __init__(self, dataset, config, device, ignore_index=-1, out_id=[1]):
         """
         :param model: module
         :param device: validator should be run in device(local rank = 0).
@@ -37,16 +37,18 @@ class Validator(object):
         self.class_num = config.data.num_classes
         self.image_mean = config.data.image_mean
         self.image_std = config.data.image_std
+        self.crop_size = config.eval.crop_size
 
         self.config = config
 
+        self.ignore_index = ignore_index
         self.device = device
         self.metric = SegMetric(n_classes=self.class_num)
         self.out_id = out_id
 
         self.val_func = None
 
-    def eval(self, model):
+    def run(self, model):
         bar_format = '{desc}[{elapsed}<{remaining},{rate_fmt}]'
         pbar = tqdm(range(self.ndata), file=sys.stdout,
                     bar_format=bar_format)
@@ -60,10 +62,11 @@ class Validator(object):
             label = self.dataset[idx]['label']
             # print('#val:', data.shape, label.shape)
 
-            loss, pred = self.val_func_process(data, label, self.device)
+            pred, loss = self.whole_eval(data, label,
+                                         input_size=self.crop_size,
+                                         output_size=data.shape[:2],
+                                         device=self.device)
             sum_loss += loss
-
-            pred, label = self.post_process(pred, label)
             self.metric.update(pred, label)
 
             if idx in self.out_id:
@@ -92,17 +95,46 @@ class Validator(object):
         torch.cuda.empty_cache()
         return sum_loss / self.dataset.get_length(), self.metric.get_scores(), out_images
 
+    # evaluate the whole image at once
+    def whole_eval(self, img, label, output_size, input_size=None, device=None):
+        if input_size is not None:
+            img, label, margin = self.process_image(img, label, input_size)
+        else:
+            img, label = self.process_image(img, label, input_size)
+
+        pred, loss = self.val_func_process(img, label, device)
+
+        # print('pred = ', pred.shape)
+        # print('margin = ', margin)
+        if input_size is not None:
+            pred = pred[:, margin[0]:(pred.shape[1] - margin[1]),
+                   margin[2]:(pred.shape[2] - margin[3])]
+
+        pred = pred.transpose(1, 2, 0)
+
+        if output_size is not None:
+            pred = cv2.resize(pred,
+                              (output_size[1], output_size[0]),
+                              interpolation=cv2.INTER_LINEAR)
+
+        return pred, loss
+
+    def to_tensor(self, img, gt, device):
+        img = torch.FloatTensor(img).cuda(device).unsqueeze(0)
+        gt = torch.LongTensor(gt).cuda(device).unsqueeze(0)
+
+        return img, gt
+
     def val_func_process(self, data, label, device=None):
-        data, label = self.pre_process(data, label)
-        data = torch.FloatTensor(data).cuda(device).unsqueeze(0)
-        label = torch.LongTensor(label).cuda(device).unsqueeze(0)
+        data, label = self.to_tensor(data, label, device)
 
         with torch.no_grad():
             loss, pred = self.val_func(data, label)
             pred = torch.exp(pred)  # the output of network is log_softmax,
+            # print('# pred ', pred.shape)
             pred = pred.argmax(1)
 
-        return loss.item(), pred.squeeze(0).cpu().numpy()
+        return pred.cpu().numpy(), loss.item()
 
     def pre_process(self, img, gt=None):
         p_img = img
@@ -123,8 +155,27 @@ class Validator(object):
 
         return p_img
 
-    def post_process(self, pred, gt):
-        if pred.shape != gt.shape:
-            pred = F.interpolate(pred, size=gt.size()[-2:], mode='bilinear', align_corners=True)
+    def process_image(self, img, gt, crop_size=None):
+        p_img = img
 
-        return pred, gt
+        if img.shape[2] < 3:
+            im_b = p_img
+            im_g = p_img
+            im_r = p_img
+            p_img = np.concatenate((im_b, im_g, im_r), axis=2)
+
+        p_img = normalize(p_img, self.image_mean, self.image_std)
+
+        if crop_size is not None:
+            p_img, margin = pad_image_to_shape(p_img, crop_size,
+                                               cv2.BORDER_CONSTANT, value=0)
+            p_gt, margin = pad_image_to_shape(gt, crop_size,
+                                              cv2.BORDER_CONSTANT, value=self.ignore_index)
+
+            p_img = p_img.transpose(2, 0, 1)
+
+            return p_img, p_gt, margin
+
+        p_img = p_img.transpose(2, 0, 1)
+
+        return p_img, gt

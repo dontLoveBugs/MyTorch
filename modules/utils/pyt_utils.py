@@ -10,6 +10,11 @@ import torch
 import torch.utils.model_zoo as model_zoo
 import torch.distributed as dist
 
+try:
+    from urllib import urlretrieve
+except ImportError:
+    from urllib.request import urlretrieve
+
 from modules.engine.logger import get_logger
 
 logger = get_logger()
@@ -51,7 +56,7 @@ def all_reduce_tensor(tensor, op=dist.ReduceOp.SUM, world_size=1):
 def load_model(model, model_file, is_restore=False):
     t_start = time.time()
     if isinstance(model_file, str):
-        state_dict = torch.load(model_file)
+        state_dict = torch.load(model_file, map_location=torch.device('cpu'))
         if 'model' in state_dict.keys():
             state_dict = state_dict['model']
     else:
@@ -86,6 +91,17 @@ def load_model(model, model_file, is_restore=False):
             t_ioend - t_start, t_end - t_ioend))
 
     return model
+
+
+def load_url(url, model_dir='/data/wangxin/pretrained_models', map_location=None):
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
+    filename = url.split('/')[-1]
+    cached_file = os.path.join(model_dir, filename)
+    if not os.path.exists(cached_file):
+        sys.stderr.write('Downloading: "{}" to {}\n'.format(url, cached_file))
+        urlretrieve(url, cached_file)
+    return torch.load(cached_file, map_location=map_location)
 
 
 def parse_devices(input_devices):

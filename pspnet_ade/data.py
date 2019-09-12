@@ -24,10 +24,10 @@ class TrainPre(object):
         crop_pos = generate_random_crop_pos(img.shape[:2], crop_size)
 
         p_img, _ = random_crop_pad_to_shape(img, crop_pos, crop_size, 0)
-        p_gt, _ = random_crop_pad_to_shape(gt, crop_pos, crop_size, 0)
+        p_gt, _ = random_crop_pad_to_shape(gt, crop_pos, crop_size, -1) # -1 is ignore index
 
         p_img = p_img.transpose(2, 0, 1)
-        p_gt = p_gt - 1
+        # p_gt = p_gt - 1
 
         extra_dict = None
 
@@ -41,7 +41,8 @@ def get_train_loader(engine, dataset):
     train_sampler = None
     is_shuffle = True
     batch_size = engine.config.train.batch_size
-    niters_per_epoch = int(np.ceil(train_dataset.get_length() // batch_size))
+    # niters_per_epoch = int(np.ceil(train_dataset.get_length() // batch_size))
+    niters_per_epoch = 10
 
     if engine.distributed:
         train_sampler = torch.utils.data.distributed.DistributedSampler(

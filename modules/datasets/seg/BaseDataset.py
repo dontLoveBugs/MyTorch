@@ -72,7 +72,13 @@ class BaseDataset(data.Dataset):
     def _open_image(filepath, mode=cv2.IMREAD_COLOR, dtype=None):
         # cv2: B G R
         # h w c
-        img = np.array(cv2.imread(filepath, mode), dtype=dtype)
+        if mode == cv2.IMREAD_COLOR:
+            img_bgr = cv2.imread(filepath, mode)
+            img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+            img = np.array(img_rgb, dtype=dtype)
+        else:
+            img_gray = cv2.imread(filepath, mode)
+            img = np.array(img_gray, dtype=dtype)
 
         return img
 

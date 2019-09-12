@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from modules.base_model import resnet50
+from modules.backbone.seg import resnet50
 from modules.ops.seg.seg_oprs import ConvBnRelu
 
 # 读取配置文件
@@ -42,15 +42,14 @@ class PSPNet(nn.Module):
         self.criterion = criterion
 
     def forward(self, data, label=None):
-        _, _, h, w = data.size()
         blocks = self.backbone(data)
 
         psp_fm = self.psp_layer(blocks[-1])
         aux_fm = self.aux_layer(blocks[-2])
 
-        psp_fm = F.interpolate(psp_fm, size=(h, w), mode='bilinear',
+        psp_fm = F.interpolate(psp_fm, scale_factor=8, mode='bilinear',
                                align_corners=True)
-        aux_fm = F.interpolate(aux_fm, size=(h, w), mode='bilinear',
+        aux_fm = F.interpolate(aux_fm, scale_factor=8, mode='bilinear',
                                align_corners=True)
 
         psp_fm = F.log_softmax(psp_fm, dim=1)
@@ -61,7 +60,8 @@ class PSPNet(nn.Module):
             aux_loss = self.criterion(aux_fm, label)
             loss = loss + 0.4 * aux_loss
 
-            return loss if self.training else (loss, psp_fm)
+            return loss if self.training \
+                else (loss.item(), psp_fm)
 
         return psp_fm
 

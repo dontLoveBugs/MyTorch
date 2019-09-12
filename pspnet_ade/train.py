@@ -23,13 +23,10 @@ from modules.engine.engine import Engine
 
 try:
     from apex import amp
-    # from apex.parallel import SyncBatchNorm, DistributedDataParallel
+    from apex.parallel import SyncBatchNorm, DistributedDataParallel
 except ImportError:
     raise ImportError(
         "Please install apex from https://www.github.com/nvidia/apex .")
-
-from torch.nn.parallel import DistributedDataParallel
-from torch.nn import SyncBatchNorm
 
 """
 Usage: python -m torch.distributed.launch --nproc_per_node=$NGPUS train.py
@@ -47,7 +44,7 @@ with Engine(config=config) as engine:
         engine.copy_config(config.log.snapshot_dir, config_file)
         val_set = ADE(config.data.dataset_path, split='val')
         validator = Validator(dataset=val_set,
-                              device=engine.local_rank,
+                              devices=[0, 1, 2, 3], ignore_index=255,
                               config=config, out_id=[202, 469, 505, 618])
 
     # data loader
@@ -172,7 +169,7 @@ with Engine(config=config) as engine:
 
         # validation and visualization
         if engine.local_rank == 0:
-            val_loss, result, out_imgs = validator.eval(model.module)
+            val_loss, result, out_imgs = validator.run(model.module)
             engine.tb_logger.add_scalar_dict_list('TrainVal',
                                                   [{'train': loss_meter.avg, 'val': val_loss}],
                                                   epoch)

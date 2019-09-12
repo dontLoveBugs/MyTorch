@@ -25,7 +25,7 @@ class SegMetric(object):
         mask = (label_true >= 0) & (label_true < n_class)
         hist = np.bincount(
             n_class * label_true[mask].astype(int) +
-            label_pred[mask], minlength=n_class**2).reshape(n_class, n_class)
+            label_pred[mask], minlength=n_class ** 2).reshape(n_class, n_class)
 
         return hist
 
@@ -73,3 +73,26 @@ class SegMetric(object):
 
     def reset(self):
         self.confusion_matrix = np.zeros((self.n_classes, self.n_classes))
+
+
+# operations
+np.seterr(divide='ignore', invalid='ignore')
+
+
+def hist_info(n_cl, pred, gt):
+    assert (pred.shape == gt.shape)
+    k = (gt >= 0) & (gt < n_cl)
+    labeled = np.sum(k)
+    correct = np.sum((pred[k] == gt[k]))
+
+    return np.bincount(n_cl * gt[k].astype(int) + pred[k].astype(int),
+                       minlength=n_cl ** 2).reshape(n_cl,
+                                                    n_cl), labeled, correct
+
+
+def compute_score(hist, correct, labeled):
+    iu = np.diag(hist) / (hist.sum(1) + hist.sum(0) - np.diag(hist))
+    mean_IU = np.nanmean(iu)
+    mean_IU_no_back = np.nanmean(iu[1:])
+    mean_pixel_acc = correct / labeled
+    return iu, mean_IU, mean_IU_no_back, mean_pixel_acc

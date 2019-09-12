@@ -7,6 +7,6 @@
 """
 
 
-from .config import Config
+from .config import Config # evaluator and validator depend on it
 from .evaluator import Evaluator
 from .validator import Validator

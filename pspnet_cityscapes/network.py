@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from modules.base_model import resnet50
+from modules.backbone.seg import resnet50
 from modules.ops.seg.seg_oprs import ConvBnRelu
 
 # 读取配置文件

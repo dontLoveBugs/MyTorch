@@ -23,6 +23,7 @@ class ADE(BaseDataset):
     def _fetch_data(self, img_path, gt_path, dtype=np.float32):
         img = self._open_image(img_path)
         gt = self._open_image(gt_path, cv2.IMREAD_GRAYSCALE, dtype=dtype)
+        gt = gt - 1 # 0:ingore --> -1:ignore
 
         return img, gt
 
@@ -39,7 +40,6 @@ class ADE(BaseDataset):
         color_list = color_list['colors']
         color_list = color_list[:, ::-1, ]
         color_list = np.array(color_list).astype(int).tolist()
-        color_list.insert(0, [0, 0, 0])
         return color_list
 
     def _get_pairs(self):
@@ -156,8 +156,8 @@ class ADE(BaseDataset):
 
 
 if __name__ == '__main__':
-    ade_train = ADE(root='/data/wangxin/ADEChallengeData2016', split='train')
-    ade_val = ADE(root='/data/wangxin/ADEChallengeData2016', split='val')
+    # ade_train = ADE(root='/data/wangxin/ADEChallengeData2016', split='train')
+    # ade_val = ADE(root='/data/wangxin/ADEChallengeData2016', split='val')
 
     # from torch.utils.data.dataloader import DataLoader
     # d_train = DataLoader(ade_train, batch_size=1)
@@ -178,7 +178,19 @@ if __name__ == '__main__':
 
     # print(ade_train.get_class_colors())
 
-    print(ade_train.get_length())
-    print(ade_val.get_length())
+    # print(ade_train.get_length())
+    # print(ade_val.get_length())
+
+    color_list = sio.loadmat('color150.mat')
+    color_list = color_list['colors']
+    print(color_list)
+    print('---------')
+    color_list = color_list[:, ::-1, ]
+    print(color_list)
+    color_list = np.array(color_list).astype(int).tolist()
+    color_list.insert(0, [0, 0, 0])
+    print('---------')
+    print(color_list)
+    print(len(color_list))
 
 

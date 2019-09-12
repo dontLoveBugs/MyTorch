@@ -24,7 +24,7 @@ class TrainPre(object):
         crop_pos = generate_random_crop_pos(img.shape[:2], crop_size)
 
         p_img, _ = random_crop_pad_to_shape(img, crop_pos, crop_size, 0)
-        p_gt, _ = random_crop_pad_to_shape(gt, crop_pos, crop_size, 255)
+        p_gt, _ = random_crop_pad_to_shape(gt, crop_pos, crop_size, 255)  # 255 is ignore index
 
         p_img = p_img.transpose(2, 0, 1)
         extra_dict = None
