@@ -8,6 +8,9 @@ import numpy as np
 import torch
 import torch.multiprocessing as mp
 
+import sys
+sys.path.append("..")
+
 from modules.engine.seg.config import Config
 from pspnet_cityscapes.network import PSPNet
 
@@ -85,7 +88,7 @@ if __name__ == "__main__":
 
     mp_ctx = mp.get_context('spawn')
     network = PSPNet(config.data.num_classes, criterion=None)
-    dataset = CityScapes(config.data.dataset_path, 'val', None)
+    dataset = CityScapes(config.data.dataset_path, 'test', None)
 
     with torch.no_grad():
         segmentor = SegEvaluator(dataset, config.data.num_classes,

@@ -6,7 +6,6 @@
  @File    : cityscapes.py
 """
 
-
 import os
 import cv2
 import numpy as np
@@ -109,6 +108,26 @@ class CityScapes(BaseDataset):
                 'motorcycle', 'bicycle']
 
 
+class ValCityScapes(CityScapes):
+
+    def __init__(self, root, local_rank, world_size,
+                 split='test', mode=None, preprocess=None, ignore_label=255):
+        super(ValCityScapes, self).__init__(root, split=split,
+                                            mode=mode, preprocess=preprocess,
+                                            ignore_label=ignore_label)
+        self.local_rank = local_rank
+        self.world_size = world_size
+
+        self.set_device_pairs()
+
+    def set_device_pairs(self):
+        stride = int(np.ceil(self.get_length() / self.world_size))
+
+        e_record = min((self.local_rank + 1) * stride, self.get_length())
+        self.images_path = self.images_path[self.local_rank * stride, e_record]
+        self.gts_path = self.gts_path[self.local_rank * stride, e_record]
+
+
 if __name__ == '__main__':
     city_train = CityScapes(root='/data/datasets/CityScapes', split='train')
     city_val = CityScapes(root='/data/datasets/CityScapes', split='val')
@@ -121,8 +140,10 @@ if __name__ == '__main__':
         label = city_train[i]['label']
         print(label[515][515])
         from modules.utils.visualize import get_color_pallete
+
         img = get_color_pallete(data, label, city_train.get_class_colors(), 255)
 
         import cv2
+
         cv2.imshow(city_train[i]['fn'], img)
         cv2.waitKey()

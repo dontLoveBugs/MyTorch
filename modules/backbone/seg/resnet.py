@@ -177,13 +177,13 @@ class ResNet(nn.Module):
         x = self.maxpool(x)
 
         blocks = []
-        x = self.layer1(x);
+        x = self.layer1(x)
         blocks.append(x)
-        x = self.layer2(x);
+        x = self.layer2(x)
         blocks.append(x)
-        x = self.layer3(x);
+        x = self.layer3(x)
         blocks.append(x)
-        x = self.layer4(x);
+        x = self.layer4(x)
         blocks.append(x)
 
         return blocks

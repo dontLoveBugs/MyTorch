@@ -51,7 +51,7 @@
 
     "snapshot":
     {
-        "name": "pspnet_cityscapes_imagenet101",
+        "name": "test",
         "root": "/data1/wangxin/snapshots"
     }
 }

@@ -14,7 +14,7 @@ from pspnet_cityscapes.data import get_train_loader
 from pspnet_cityscapes.network import PSPNet
 from pspnet_cityscapes.validator import Validator
 
-from modules.datasets.seg.cityscapes import CityScapes
+from modules.datasets.seg.cityscapes import CityScapes, ValCityScapes
 from modules.utils.init_func import init_weight, group_weight
 from modules.utils.pyt_utils import all_reduce_tensor
 from modules.utils.average_meter import AverageMeter
@@ -46,8 +46,10 @@ with Engine(config=config) as engine:
     if engine.local_rank == 0:
         # save config
         engine.copy_config(config.log.snapshot_dir, config_file)
-        val_set = CityScapes(config.data.dataset_path, split='val')
-        validator = Validator(dataset=val_set,
+
+    val_set = ValCityScapes(config.data.dataset_path, local_rank=engine.local_rank,
+                            world_size=engine.world_size, split='val')
+    validator = Validator(dataset=val_set,
                               device=engine.local_rank,
                               ignore_index=255,
                               config=config, out_id=[1])
@@ -175,12 +177,26 @@ with Engine(config=config) as engine:
             engine.save_and_link_checkpoint(config.log.log.snapshot_dir)
 
         # validation and visualization
+        val_loss, result, out_imgs = validator.run(model.module)
+        val_loss = torch.tensor(val_loss)
+        acc, mean_iu = torch.tensor(result[0]), torch.tensor(result[1])
+        out_imgs = torch.tensor(out_imgs)
+
         if engine.local_rank == 0:
-            val_loss, result, out_imgs = validator.run(model.module)
+            val_loss = all_reduce_tensor(val_loss, world_size=engine.world_size)
+            acc = all_reduce_tensor(acc, world_size=engine.world_size)
+            mean_iu = all_reduce_tensor(mean_iu, world_size=engine.world_size)
+
+            out_imgs_list = []
+            torch.distributed.gather(out_imgs, gather_list=out_imgs_list, async_op=True)
+
             engine.tb_logger.add_scalar_dict_list('TrainVal',
-                                                  [{'train': loss_meter.avg, 'val': val_loss}],
+                                                  [{'train': loss_meter.avg,
+                                                    'val': val_loss}],
                                                   epoch)
-            engine.tb_logger.add_scalar_dict('Train', result, epoch)
+            engine.tb_logger.add_scalar_dict('Train', {'acc': acc.item(),
+                                                       'mean_iu': mean_iu.item()},
+                                             epoch)
             loss_meter.reset()
 
             engine.save_images(config.log.snapshot_dir,

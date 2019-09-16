@@ -6,4 +6,4 @@
  @File    : __init__.py.py
 """
 
-from .cityscapes import CityScapes
+from .cityscapes import CityScapes, ValCityScapes

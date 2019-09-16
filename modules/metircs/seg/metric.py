@@ -57,13 +57,13 @@ class SegMetric(object):
         # cls_iu = dict(zip(range(self.n_classes), iu))
 
         # return acc, acc_cls, fwavacc, mean_iu, cls_iu
-        result = edict()
-        result.acc = acc
-        result.acc_cls = acc_cls
-        result.fwavacc = fwavacc
-        result.mean_iu = mean_iu
+        # result = edict()
+        # result.acc = acc
+        # result.acc_cls = acc_cls
+        # result.fwavacc = fwavacc
+        # result.mean_iu = mean_iu
         # result.cls_iu = cls_iu
-        return result
+        return [acc, mean_iu]
 
     def get_mean_iou(self):
         return self._get_scores()['mean_iu']
