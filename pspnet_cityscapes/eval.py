@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     mp_ctx = mp.get_context('spawn')
     network = PSPNet(config.data.num_classes, criterion=None)
-    dataset = CityScapes(config.data.dataset_path, 'test', None)
+    dataset = CityScapes(config.data.dataset_path, 'val', None)
 
     with torch.no_grad():
         segmentor = SegEvaluator(dataset, config.data.num_classes,

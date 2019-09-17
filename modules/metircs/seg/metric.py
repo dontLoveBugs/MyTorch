@@ -49,11 +49,11 @@ class SegMetric(object):
         hist = self.confusion_matrix
         acc = np.diag(hist).sum() / hist.sum()
         acc_cls = np.diag(hist) / hist.sum(axis=1)
-        acc_cls = np.nanmean(acc_cls)
+        # acc_cls = np.nanmean(acc_cls)
         iu = np.diag(hist) / (hist.sum(axis=1) + hist.sum(axis=0) - np.diag(hist))
         mean_iu = np.nanmean(iu)
-        freq = hist.sum(axis=1) / hist.sum()
-        fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
+        # freq = hist.sum(axis=1) / hist.sum()
+        # fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
         # cls_iu = dict(zip(range(self.n_classes), iu))
 
         # return acc, acc_cls, fwavacc, mean_iu, cls_iu

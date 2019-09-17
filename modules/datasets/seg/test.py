@@ -26,4 +26,13 @@ end = time.time()
 b = np.array(Image.open('left.png', mode='r').convert('RGB'), dtype=None)
 print('pillow cost time:', time.time()-end)
 
-print(a==b)
+from modules.utils.img_utils import pad_image_to_shape
+
+crop_size = 512
+
+a_crop, margin = pad_image_to_shape(a, crop_size, cv2.BORDER_CONSTANT, 0)
+print(margin)
+
+cv2.imshow('a crop', a_crop)
+cv2.imwrite('acrop.png', a_crop)
+# cv2.waitKey()

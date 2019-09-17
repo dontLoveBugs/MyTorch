@@ -8,7 +8,8 @@
 
     "model" :
     {
-        "pretrained_model": "/data1/wangxin/pretrained_models/resnet50-imagenet.pth",
+        "backbone": "resnet50",
+        "pretrained_model": "/data/wangxin/pretrained_models/resnet50-imagenet.pth",
         "continue_path": "",
         "deep_stem": true,
         "bn_momentum": 0.1,
@@ -21,7 +22,7 @@
     "train" :
     {
         "batch_size": 16,
-        "lr": 0.01,
+        "lr": 0.02,
         "lr_power": 0.9,
         "momentum": 0.9,
         "weight_decay": 0.0001,
@@ -39,7 +40,7 @@
     },
 
     "data": {
-        "dataset_path": "/data1/wangxin/ADEChallengeData2016",
+        "dataset_path": "/data/wangxin/ADEChallengeData2016",
         "crop_h": 480,
         "crop_w": 480,
         "num_classes": 150,
@@ -51,7 +52,7 @@
 
     "snapshot":
     {
-        "name": "RGB_new_val",
-        "root": "/data1/wangxin/snapshots"
+        "name": "lr0.2_pytorch_syncbn",
+        "root": "/data/wangxin/snapshots"
     }
 }

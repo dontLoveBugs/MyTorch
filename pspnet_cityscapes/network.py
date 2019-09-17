@@ -6,23 +6,34 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from modules.backbone.seg import resnet50
+import sys
+
+sys.path.append("..")
+
+from modules.backbone.seg import resnet50, resnet101
 from modules.ops.seg.seg_oprs import ConvBnRelu
 
-# 读取配置文件
+# read config file
 from modules.engine.seg.config import Config
 
 config = Config(config_file='./config.json').get_config()
+
+backbone = {
+    "resnet50": resnet50,
+    "resnet101": resnet101
+}
 
 
 class PSPNet(nn.Module):
     def __init__(self, out_planes, criterion, pretrained_model=None,
                  norm_layer=nn.BatchNorm2d):
         super(PSPNet, self).__init__()
-        self.backbone = resnet50(pretrained_model, norm_layer=norm_layer,
-                                 bn_eps=config.model.bn_eps,
-                                 bn_momentum=config.model.bn_momentum,
-                                 deep_stem=config.model.deep_stem, stem_width=64)
+        self.backbone = backbone[config.model.backbone](pretrained_model,
+                                                        norm_layer=norm_layer,
+                                                        bn_eps=config.model.bn_eps,
+                                                        bn_momentum=config.model.bn_momentum,
+                                                        deep_stem=config.model.deep_stem,
+                                                        stem_width=64)
         self.backbone.layer3.apply(partial(self._nostride_dilate, dilate=2))
         self.backbone.layer4.apply(partial(self._nostride_dilate, dilate=4))
 
@@ -42,15 +53,14 @@ class PSPNet(nn.Module):
         self.criterion = criterion
 
     def forward(self, data, label=None):
-        _, _, h, w = data.size()
         blocks = self.backbone(data)
 
         psp_fm = self.psp_layer(blocks[-1])
         aux_fm = self.aux_layer(blocks[-2])
 
-        psp_fm = F.interpolate(psp_fm, size=(h, w), mode='bilinear',
+        psp_fm = F.interpolate(psp_fm, scale_factor=8, mode='bilinear',
                                align_corners=True)
-        aux_fm = F.interpolate(aux_fm, size=(h, w), mode='bilinear',
+        aux_fm = F.interpolate(aux_fm, scale_factor=8, mode='bilinear',
                                align_corners=True)
 
         psp_fm = F.log_softmax(psp_fm, dim=1)
@@ -117,5 +127,5 @@ class PyramidPooling(nn.Module):
 
 
 if __name__ == "__main__":
-    model = PSPNet(150, None)
-    print(model)
+    model = PSPNet(150, None, pretrained_model=config.model.pretrained_model)
+    # print(model)

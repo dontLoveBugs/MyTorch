@@ -4,6 +4,7 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 
+import os
 import sys
 
 sys.path.append("..")
@@ -50,9 +51,10 @@ with Engine(config=config) as engine:
     val_set = ValCityScapes(config.data.dataset_path, local_rank=engine.local_rank,
                             world_size=engine.world_size, split='val')
     validator = Validator(dataset=val_set,
-                              device=engine.local_rank,
-                              ignore_index=255,
-                              config=config, out_id=[1])
+                          device=engine.local_rank,
+                          ignore_index=255,
+                          config=config,
+                          out_fn=['lindau_000024_000019_leftImg8bit'])
 
     # data loader
     train_loader, train_sampler, niters_per_epoch = get_train_loader(engine, CityScapes)
@@ -177,33 +179,30 @@ with Engine(config=config) as engine:
             engine.save_and_link_checkpoint(config.log.log.snapshot_dir)
 
         # validation and visualization
-        val_loss, result, out_imgs = validator.run(model.module)
-        val_loss = torch.tensor(val_loss)
-        acc, mean_iu = torch.tensor(result[0]), torch.tensor(result[1])
-        out_imgs = torch.tensor(out_imgs)
+        val_loss, result, out_imgs = validator.run(model)
+        val_loss = torch.tensor(val_loss, device=device)
+        acc, mean_iu = torch.tensor(result[0], device=device), \
+                       torch.tensor(result[1], device=device)
+
+        engine.save_images(config.log.snapshot_dir,
+                           'compare_' + str(epoch) + '_' + str(engine.local_rank) + '.png',
+                           out_imgs)
+
+        val_loss = all_reduce_tensor(val_loss, world_size=engine.world_size).item()
+        acc = all_reduce_tensor(acc, world_size=engine.world_size).item()
+        mean_iu = all_reduce_tensor(mean_iu, world_size=engine.world_size).item()
 
         if engine.local_rank == 0:
-            val_loss = all_reduce_tensor(val_loss, world_size=engine.world_size)
-            acc = all_reduce_tensor(acc, world_size=engine.world_size)
-            mean_iu = all_reduce_tensor(mean_iu, world_size=engine.world_size)
-
-            out_imgs_list = []
-            torch.distributed.gather(out_imgs, gather_list=out_imgs_list, async_op=True)
-
             engine.tb_logger.add_scalar_dict_list('TrainVal',
                                                   [{'train': loss_meter.avg,
                                                     'val': val_loss}],
                                                   epoch)
-            engine.tb_logger.add_scalar_dict('Train', {'acc': acc.item(),
-                                                       'mean_iu': mean_iu.item()},
+            engine.tb_logger.add_scalar_dict('Train', {'acc': acc,
+                                                       'mean_iu': mean_iu},
                                              epoch)
             loss_meter.reset()
-
-            engine.save_images(config.log.snapshot_dir,
-                               'compare_' + str(epoch) + '.png', out_imgs)
             engine.logger.info('Epoch {} Validation: '.format(epoch)
-                               + 'mean acc:%.2f' % result.acc
-                               + ', mean iou:%.2f' % result.mean_iu)
+                               + 'mean acc:%.2f' % acc
+                               + ', mean iou:%.2f' % mean_iu)
 
         model.train()
-        torch.cuda.synchronize()

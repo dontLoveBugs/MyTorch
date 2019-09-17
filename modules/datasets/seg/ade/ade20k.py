@@ -23,7 +23,7 @@ class ADE(BaseDataset):
     def _fetch_data(self, img_path, gt_path, dtype=np.float32):
         img = self._open_image(img_path)
         gt = self._open_image(gt_path, cv2.IMREAD_GRAYSCALE, dtype=dtype)
-        gt = gt - 1 # 0:ingore --> -1:ignore
+        gt = gt - 1  # 0:ingore --> -1:ignore
 
         return img, gt
 
@@ -155,6 +155,26 @@ class ADE(BaseDataset):
                 'glass, drinking glass', 'clock', 'flag']
 
 
+class ValADE(ADE):
+
+    def __init__(self, root, local_rank, world_size,
+                 split='test', mode=None, preprocess=None):
+        super(ValADE, self).__init__(root, split=split,
+                                     mode=mode, preprocess=preprocess)
+        self.local_rank = local_rank
+        self.world_size = world_size
+
+        self.set_device_pairs()
+
+    def set_device_pairs(self):
+        stride = int(np.ceil(self.get_length() / self.world_size))
+
+        e_record = min((self.local_rank + 1) * stride, self.get_length())
+        # print('start:', self.local_rank * stride, ' end:', e_record)
+        self.images_path = self.images_path[self.local_rank * stride: e_record]
+        self.gts_path = self.gts_path[self.local_rank * stride: e_record]
+
+
 if __name__ == '__main__':
     # ade_train = ADE(root='/data/wangxin/ADEChallengeData2016', split='train')
     # ade_val = ADE(root='/data/wangxin/ADEChallengeData2016', split='val')
@@ -192,5 +212,3 @@ if __name__ == '__main__':
     print('---------')
     print(color_list)
     print(len(color_list))
-
-

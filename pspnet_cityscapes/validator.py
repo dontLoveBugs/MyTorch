@@ -22,7 +22,7 @@ from modules.metircs.seg.metric import SegMetric
 
 
 class Validator(object):
-    def __init__(self, dataset, config, device, ignore_index=-1, out_id=[1]):
+    def __init__(self, dataset, config, device, ignore_index=-1, out_fn=[1]):
         """
         :param model: module
         :param device: validator should be run in device(local rank = 0).
@@ -44,7 +44,7 @@ class Validator(object):
         self.ignore_index = ignore_index
         self.device = device
         self.metric = SegMetric(n_classes=self.class_num)
-        self.out_id = out_id
+        self.out_fn = out_fn
 
         self.val_func = None
 
@@ -69,7 +69,7 @@ class Validator(object):
             sum_loss += loss
             self.metric.update(pred, label)
 
-            if idx in self.out_id:
+            if self.dataset[idx]['fn'] in self.out_fn:
                 tmp_imgs = np.vstack([data,
                                       get_color_pallete(data, label,
                                                         self.dataset.get_class_colors(), self.config.data.background),
@@ -88,7 +88,7 @@ class Validator(object):
                     # print(out_images.shape, tmp_imgs.shape)
                     out_images = np.hstack([out_images, tmp_imgs])
 
-            print_str = 'Validation {}/{}:'.format(idx + 1, self.ndata)
+            print_str = 'GPU{}, Validation {}/{}:'.format(self.device, idx + 1, self.ndata)
             pbar.set_description(print_str, refresh=False)
 
         # empty the eval cuda cache.
@@ -120,8 +120,8 @@ class Validator(object):
         return pred, loss
 
     def to_tensor(self, img, gt, device):
-        img = torch.FloatTensor(img).cuda(device).unsqueeze(0)
-        gt = torch.LongTensor(gt).cuda(device).unsqueeze(0)
+        img = torch.FloatTensor(img).cuda(device, non_blocking=True).unsqueeze(0)
+        gt = torch.LongTensor(gt).cuda(device, non_blocking=True).unsqueeze(0)
 
         return img, gt
 
@@ -135,25 +135,6 @@ class Validator(object):
             pred = pred.argmax(1)
 
         return pred.cpu().numpy(), loss.item()
-
-    def pre_process(self, img, gt=None):
-        p_img = img
-
-        if img.shape[2] < 3:
-            im_b = p_img
-            im_g = p_img
-            im_r = p_img
-            p_img = np.concatenate((im_b, im_g, im_r), axis=2)
-
-        p_img = normalize(p_img, self.image_mean, self.image_std)
-        p_img = p_img.transpose(2, 0, 1)
-
-        if gt is not None:
-            # p_gt = gt - 1
-            p_gt = gt
-            return p_img, p_gt
-
-        return p_img
 
     def process_image(self, img, gt, crop_size=None):
         p_img = img

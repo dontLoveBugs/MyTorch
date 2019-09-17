@@ -142,7 +142,8 @@ class Engine(object):
         img_saved_dir = osp.join(snapshot_dir, 'imgs')
         ensure_dir(img_saved_dir)
         filenames = osp.join(img_saved_dir, filenames)
-        cv2.imwrite(filenames, image)
+        if image is not None:
+            cv2.imwrite(filenames, image)
 
     def copy_config(self, snapshot_dir, config_file):
         ensure_dir(snapshot_dir)

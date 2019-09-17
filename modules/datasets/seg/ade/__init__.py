@@ -1,3 +1,3 @@
-from .ade20k import ADE
+from .ade20k import ADE, ValADE
 
-__all__ = ['ADE']
+__all__ = ['ADE', "ValADE"]

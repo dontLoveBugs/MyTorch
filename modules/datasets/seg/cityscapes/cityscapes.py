@@ -124,8 +124,9 @@ class ValCityScapes(CityScapes):
         stride = int(np.ceil(self.get_length() / self.world_size))
 
         e_record = min((self.local_rank + 1) * stride, self.get_length())
-        self.images_path = self.images_path[self.local_rank * stride, e_record]
-        self.gts_path = self.gts_path[self.local_rank * stride, e_record]
+        print('start:', self.local_rank * stride, ' end:', e_record)
+        self.images_path = self.images_path[self.local_rank * stride: e_record]
+        self.gts_path = self.gts_path[self.local_rank * stride: e_record]
 
 
 if __name__ == '__main__':

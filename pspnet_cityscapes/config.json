@@ -8,6 +8,7 @@
 
     "model" :
     {
+        "backbone": "resnet101",
         "pretrained_model": "/data1/wangxin/pretrained_models/resnet101-imagenet.pth",
         "continue_path": "",
         "deep_stem": true,
@@ -16,6 +17,11 @@
         "sync_bn": true,
         "fix_bias": true,
         "fix_bn": false
+    },
+
+    "amp":
+    {
+        "opt_level": "O1"
     },
 
     "train" :
@@ -51,7 +57,7 @@
 
     "snapshot":
     {
-        "name": "test",
+        "name": "resnet101_cityscapes_lr0.1_amp",
         "root": "/data1/wangxin/snapshots"
     }
 }
